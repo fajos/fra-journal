@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,10 @@ import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { PrioritySelector } from '../components/PrioritySelector';
+import { LifeBalanceRadar } from '../components/LifeBalanceRadar';
 import { JOURNAL_QUOTES } from '../constants/quotes';
 import { getLifeAreaIcon } from '../components/GoalScopeHeader';
+import { hapticFeedback } from '../services/hapticsService';
 import {
   ArrowRight,
   CheckCircle2,
@@ -22,6 +24,8 @@ import {
   Calendar,
   Clock,
   Layers,
+  PieChart,
+  LayoutGrid,
 } from 'lucide-react-native';
 
 interface YearGoalsScreenProps {
@@ -43,6 +47,7 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const [viewMode, setViewMode] = useState<'cards' | 'radar'>('cards');
 
   const topThreeCount = Object.values(state.goals).filter((g) => g.isTopThree).length;
 
@@ -80,6 +85,11 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
     onUpdateState({ ...state, goals: updatedGoals });
   };
 
+  const handleSwitchMode = (mode: 'cards' | 'radar') => {
+    hapticFeedback.selection();
+    setViewMode(mode);
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FloralHeader
@@ -88,103 +98,140 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         year={state.year}
       />
 
+      {/* Top Banner with View Switcher */}
       <View style={styles.topBanner}>
-        <View style={styles.counterBadge}>
-          <CheckCircle2 size={15} color={THEME.colors.primary} />
-          <Text style={styles.counterText}>
-            Top 3 Goals Selected: <Text style={styles.bold}>{topThreeCount}/3</Text>
-          </Text>
+        <View style={styles.bannerRow}>
+          <View style={styles.counterBadge}>
+            <CheckCircle2 size={15} color={THEME.colors.primary} />
+            <Text style={styles.counterText}>
+              Top 3 Goals: <Text style={styles.bold}>{topThreeCount}/3</Text>
+            </Text>
+          </View>
+
+          {/* View Mode Toggle */}
+          <View style={styles.toggleRow}>
+            <Pressable
+              onPress={() => handleSwitchMode('cards')}
+              style={[styles.toggleBtn, viewMode === 'cards' && styles.toggleBtnActive]}
+            >
+              <LayoutGrid size={13} color={viewMode === 'cards' ? '#FFFFFF' : THEME.colors.textMuted} />
+              <Text style={[styles.toggleBtnText, viewMode === 'cards' && styles.toggleBtnTextActive]}>
+                Cards
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleSwitchMode('radar')}
+              style={[styles.toggleBtn, viewMode === 'radar' && styles.toggleBtnActive]}
+            >
+              <PieChart size={13} color={viewMode === 'radar' ? '#FFFFFF' : THEME.colors.textMuted} />
+              <Text style={[styles.toggleBtnText, viewMode === 'radar' && styles.toggleBtnTextActive]}>
+                Life Wheel
+              </Text>
+            </Pressable>
+          </View>
         </View>
+
         <Text style={styles.bannerHint}>
-          Each goal cascades into its own quarterly, monthly, and weekly plans.
+          {viewMode === 'cards'
+            ? 'Each life area cascades into quarterly, monthly, and weekly plans.'
+            : 'Track overall balance and momentum across your 8 life areas.'}
         </Text>
       </View>
 
-      <View style={[styles.grid, isWide && styles.gridWide]}>
-        {LIFE_AREAS.map((item) => {
-          const goal = state.goals[item.key];
-          if (!goal) return null;
+      {/* Render Life Balance Wheel or Cards Grid */}
+      {viewMode === 'radar' ? (
+        <LifeBalanceRadar
+          state={state}
+          onSelectArea={(area) => onNavigateToBreakdown(area)}
+        />
+      ) : (
+        <View style={[styles.grid, isWide && styles.gridWide]}>
+          {LIFE_AREAS.map((item) => {
+            const goal = state.goals[item.key];
+            if (!goal) return null;
 
-          return (
-            <View
-              key={item.key}
-              style={[
-                styles.card,
-                isWide && styles.cardWide,
-                goal.isTopThree && styles.cardTopThree,
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.cardTitleRow}>
-                  {getLifeAreaIcon(item.key, 18, THEME.colors.primary)}
-                  <Text style={styles.cardTitle}>{item.label}</Text>
-                </View>
-                {goal.isTopThree && (
-                  <View style={styles.starPill}>
-                    <Text style={styles.starPillText}>★ Priority</Text>
+            return (
+              <View
+                key={item.key}
+                style={[
+                  styles.card,
+                  isWide && styles.cardWide,
+                  goal.isTopThree && styles.cardTopThree,
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardTitleRow}>
+                    {getLifeAreaIcon(item.key, 18, THEME.colors.primary)}
+                    <Text style={styles.cardTitle}>{item.label}</Text>
                   </View>
-                )}
+                  {goal.isTopThree && (
+                    <View style={styles.starPill}>
+                      <Text style={styles.starPillText}>★ Priority</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TextInput
+                  value={goal.text}
+                  onChangeText={(t) => handleTextChange(item.key, t)}
+                  placeholder={item.defaultPlaceholder}
+                  placeholderTextColor={THEME.colors.textLight}
+                  multiline
+                  numberOfLines={3}
+                  style={styles.cardInput}
+                />
+
+                <PrioritySelector
+                  priority={goal.priority}
+                  onChangePriority={(p) => handlePriorityChange(item.key, p)}
+                  isTopThree={goal.isTopThree}
+                  onToggleTopThree={() => handleToggleTopThree(item.key)}
+                />
+
+                {/* Navigation Action Pills for this Goal */}
+                <View style={styles.actionPillsRow}>
+                  <Pressable
+                    onPress={() => onNavigateToBreakdown(item.key)}
+                    style={styles.actionPillPrimary}
+                    hitSlop={4}
+                  >
+                    <Layers size={12} color="#FFFFFF" />
+                    <Text style={styles.actionPillPrimaryText}>Breakdown</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => onNavigateToQuarter(item.key, 1)}
+                    style={styles.actionPillSecondary}
+                    hitSlop={4}
+                  >
+                    <Compass size={12} color={THEME.colors.primary} />
+                    <Text style={styles.actionPillSecondaryText}>Quarters</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => onNavigateToMonth(item.key, 1)}
+                    style={styles.actionPillSecondary}
+                    hitSlop={4}
+                  >
+                    <Calendar size={12} color={THEME.colors.secondary} />
+                    <Text style={styles.actionPillSecondaryText}>Months</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => onNavigateToWeek(item.key, 1, 1)}
+                    style={styles.actionPillSecondary}
+                    hitSlop={4}
+                  >
+                    <Clock size={12} color={THEME.colors.textDark} />
+                    <Text style={styles.actionPillSecondaryText}>Weeks</Text>
+                  </Pressable>
+                </View>
               </View>
-
-              <TextInput
-                value={goal.text}
-                onChangeText={(t) => handleTextChange(item.key, t)}
-                placeholder={item.defaultPlaceholder}
-                placeholderTextColor={THEME.colors.textLight}
-                multiline
-                numberOfLines={3}
-                style={styles.cardInput}
-              />
-
-              <PrioritySelector
-                priority={goal.priority}
-                onChangePriority={(p) => handlePriorityChange(item.key, p)}
-                isTopThree={goal.isTopThree}
-                onToggleTopThree={() => handleToggleTopThree(item.key)}
-              />
-
-              {/* Navigation Action Pills for this Goal */}
-              <View style={styles.actionPillsRow}>
-                <Pressable
-                  onPress={() => onNavigateToBreakdown(item.key)}
-                  style={styles.actionPillPrimary}
-                  hitSlop={4}
-                >
-                  <Layers size={12} color="#FFFFFF" />
-                  <Text style={styles.actionPillPrimaryText}>Breakdown</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => onNavigateToQuarter(item.key, 1)}
-                  style={styles.actionPillSecondary}
-                  hitSlop={4}
-                >
-                  <Compass size={12} color={THEME.colors.primary} />
-                  <Text style={styles.actionPillSecondaryText}>Quarters</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => onNavigateToMonth(item.key, 1)}
-                  style={styles.actionPillSecondary}
-                  hitSlop={4}
-                >
-                  <Calendar size={12} color={THEME.colors.secondary} />
-                  <Text style={styles.actionPillSecondaryText}>Months</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => onNavigateToWeek(item.key, 1, 1)}
-                  style={styles.actionPillSecondary}
-                  hitSlop={4}
-                >
-                  <Clock size={12} color={THEME.colors.textDark} />
-                  <Text style={styles.actionPillSecondaryText}>Weeks</Text>
-                </Pressable>
-              </View>
-            </View>
-          );
-        })}
-      </View>
+            );
+          })}
+        </View>
+      )}
 
       <QuoteFooter
         quote={JOURNAL_QUOTES.yearGoals.text}
@@ -203,19 +250,24 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   topBanner: {
-    marginHorizontal: 18,
+    marginHorizontal: 16,
     marginBottom: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
     borderRadius: THEME.radius.md,
     padding: 12,
     borderWidth: 1,
     borderColor: THEME.colors.cardBorder,
   },
+  bannerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   counterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
   },
   counterText: {
     fontSize: 13,
@@ -224,6 +276,32 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: '700',
     color: THEME.colors.primary,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F3EFEA',
+    borderRadius: 8,
+    padding: 2,
+    gap: 2,
+  },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  toggleBtnActive: {
+    backgroundColor: THEME.colors.primary,
+  },
+  toggleBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.colors.textMuted,
+  },
+  toggleBtnTextActive: {
+    color: '#FFFFFF',
   },
   bannerHint: {
     fontSize: 12,

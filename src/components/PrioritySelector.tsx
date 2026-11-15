@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { THEME } from '../constants/theme';
-import { Check, Star } from 'lucide-react-native';
+import { Star } from 'lucide-react-native';
+import { hapticFeedback } from '../services/hapticsService';
 
 interface PrioritySelectorProps {
   priority: 1 | 2 | 3;
@@ -16,6 +17,16 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({
   isTopThree,
   onToggleTopThree,
 }) => {
+  const handleSelect = (level: 1 | 2 | 3) => {
+    hapticFeedback.selection();
+    onChangePriority(level);
+  };
+
+  const handleTopThree = () => {
+    hapticFeedback.medium();
+    if (onToggleTopThree) onToggleTopThree();
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.priorityRow}>
@@ -26,7 +37,7 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({
             return (
               <Pressable
                 key={level}
-                onPress={() => onChangePriority(level)}
+                onPress={() => handleSelect(level)}
                 style={[
                   styles.circle,
                   isFilled && styles.circleFilled,
@@ -42,7 +53,7 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({
 
       {onToggleTopThree && (
         <Pressable
-          onPress={onToggleTopThree}
+          onPress={handleTopThree}
           style={[styles.topThreeBadge, isTopThree && styles.topThreeBadgeActive]}
           hitSlop={6}
         >

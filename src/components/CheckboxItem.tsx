@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TextInput, StyleSheet, Pressable } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { THEME } from '../constants/theme';
+import { hapticFeedback } from '../services/hapticsService';
 
 interface CheckboxItemProps {
   text: string;
@@ -20,10 +21,15 @@ export const CheckboxItem: React.FC<CheckboxItemProps> = ({
   placeholder = 'Write item...',
   onDelete,
 }) => {
+  const handleToggle = () => {
+    hapticFeedback.success();
+    onToggle();
+  };
+
   return (
     <View style={styles.container}>
       <Pressable
-        onPress={onToggle}
+        onPress={handleToggle}
         style={[styles.checkbox, completed && styles.checkboxCompleted]}
         hitSlop={8}
       >

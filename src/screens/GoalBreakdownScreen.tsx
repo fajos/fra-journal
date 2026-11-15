@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,19 @@ import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
+import { ReminderModal } from '../components/ReminderModal';
+import { ReflectivePromptsModal } from '../components/ReflectivePromptsModal';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { ChevronRight, Target, Sparkles, HeartHandshake, Layers } from 'lucide-react-native';
+import { hapticFeedback } from '../services/hapticsService';
+import {
+  ChevronRight,
+  Target,
+  Sparkles,
+  HeartHandshake,
+  Layers,
+  Bell,
+  HelpCircle,
+} from 'lucide-react-native';
 
 interface GoalBreakdownScreenProps {
   state: JournalState;
@@ -33,6 +44,12 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+
+  // Modals state
+  const [reminderModalVisible, setReminderModalVisible] = useState(false);
+  const [activeMilestoneTitle, setActiveMilestoneTitle] = useState('');
+  const [promptsModalVisible, setPromptsModalVisible] = useState(false);
+  const [promptContext, setPromptContext] = useState<'whyItMatters' | 'supportNeeded'>('whyItMatters');
 
   const currentGoal = state.goals[selectedArea];
   if (!currentGoal) return null;
@@ -55,6 +72,28 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
         [qKey]: text,
       },
     });
+  };
+
+  const handleOpenReminder = (title: string) => {
+    hapticFeedback.light();
+    setActiveMilestoneTitle(title || `Milestone for ${selectedArea}`);
+    setReminderModalVisible(true);
+  };
+
+  const handleOpenPrompts = (type: 'whyItMatters' | 'supportNeeded') => {
+    hapticFeedback.light();
+    setPromptContext(type);
+    setPromptsModalVisible(true);
+  };
+
+  const handleInsertPrompt = (prompt: string) => {
+    if (promptContext === 'whyItMatters') {
+      const existing = currentGoal.whyItMatters ? `${currentGoal.whyItMatters}\n\n` : '';
+      updateCurrentGoal({ whyItMatters: `${existing}${prompt}` });
+    } else {
+      const existing = currentGoal.supportNeeded ? `${currentGoal.supportNeeded}\n\n` : '';
+      updateCurrentGoal({ supportNeeded: `${existing}${prompt}` });
+    }
   };
 
   return (
@@ -91,9 +130,19 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
 
         {/* Section 2: Why it matters to me */}
         <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <Sparkles size={17} color={THEME.colors.primary} />
-            <Text style={styles.sectionTitle}>Why it matters to me</Text>
+          <View style={styles.headerBetween}>
+            <View style={styles.sectionHeader}>
+              <Sparkles size={17} color={THEME.colors.primary} />
+              <Text style={styles.sectionTitle}>Why it matters to me</Text>
+            </View>
+            <Pressable
+              onPress={() => handleOpenPrompts('whyItMatters')}
+              style={styles.promptHelperBtn}
+              hitSlop={6}
+            >
+              <HelpCircle size={13} color={THEME.colors.primary} />
+              <Text style={styles.promptHelperText}>Prompts</Text>
+            </Pressable>
           </View>
           <TextInput
             value={currentGoal.whyItMatters}
@@ -113,7 +162,7 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
             <Text style={styles.sectionTitle}>Milestones</Text>
           </View>
           <Text style={styles.sectionHint}>
-            Break down this goal into achievable quarterly checkpoints:
+            Break down this goal into quarterly targets with optional date reminders:
           </Text>
 
           <View style={[styles.milestoneGrid, isWide && styles.milestoneGridWide]}>
@@ -129,14 +178,23 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
               >
                 <View style={styles.quarterHeader}>
                   <Text style={styles.quarterTitle}>{label}</Text>
-                  <Pressable
-                    onPress={() => onNavigateToQuarter(selectedArea, num)}
-                    hitSlop={6}
-                    style={styles.quarterLink}
-                  >
-                    <Text style={styles.quarterLinkText}>Plan Q{num}</Text>
-                    <ChevronRight size={12} color={THEME.colors.primary} />
-                  </Pressable>
+                  <View style={styles.quarterActionGroup}>
+                    <Pressable
+                      onPress={() => handleOpenReminder(currentGoal.milestones[key] || `${label} Milestone`)}
+                      hitSlop={6}
+                      style={styles.reminderIconBtn}
+                    >
+                      <Bell size={12} color={THEME.colors.textMuted} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => onNavigateToQuarter(selectedArea, num)}
+                      hitSlop={6}
+                      style={styles.quarterLink}
+                    >
+                      <Text style={styles.quarterLinkText}>Plan Q{num}</Text>
+                      <ChevronRight size={12} color={THEME.colors.primary} />
+                    </Pressable>
+                  </View>
                 </View>
                 <TextInput
                   value={currentGoal.milestones[key]}
@@ -154,14 +212,24 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
 
         {/* Section 4: Support I need */}
         <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <HeartHandshake size={17} color={THEME.colors.primary} />
-            <Text style={styles.sectionTitle}>Support I need</Text>
+          <View style={styles.headerBetween}>
+            <View style={styles.sectionHeader}>
+              <HeartHandshake size={17} color={THEME.colors.primary} />
+              <Text style={styles.sectionTitle}>Support I need</Text>
+            </View>
+            <Pressable
+              onPress={() => handleOpenPrompts('supportNeeded')}
+              style={styles.promptHelperBtn}
+              hitSlop={6}
+            >
+              <HelpCircle size={13} color={THEME.colors.primary} />
+              <Text style={styles.promptHelperText}>Prompts</Text>
+            </Pressable>
           </View>
           <TextInput
             value={currentGoal.supportNeeded}
             onChangeText={(t) => updateCurrentGoal({ supportNeeded: t })}
-            placeholder="Who can help keep you accountable? What tools, books, mentors, or habits do you need?"
+            placeholder="Who can keep you accountable? What tools, books, mentors, or habits do you need?"
             placeholderTextColor={THEME.colors.textLight}
             multiline
             numberOfLines={3}
@@ -173,6 +241,22 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
       <QuoteFooter
         quote={JOURNAL_QUOTES.goalBreakdown.text}
         author={JOURNAL_QUOTES.goalBreakdown.author}
+      />
+
+      {/* Reminder Scheduling Modal */}
+      <ReminderModal
+        visible={reminderModalVisible}
+        onClose={() => setReminderModalVisible(false)}
+        milestoneTitle={activeMilestoneTitle}
+        goalArea={selectedArea}
+      />
+
+      {/* Reflective Prompts Modal */}
+      <ReflectivePromptsModal
+        visible={promptsModalVisible}
+        onClose={() => setPromptsModalVisible(false)}
+        contextType={promptContext}
+        onSelectPrompt={handleInsertPrompt}
       />
     </ScrollView>
   );
@@ -199,17 +283,36 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     ...THEME.shadow,
   },
+  headerBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 16,
     fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
     color: THEME.colors.textDark,
+  },
+  promptHelperBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: THEME.colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  promptHelperText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.colors.primary,
   },
   sectionHint: {
     fontSize: 12,
@@ -255,6 +358,14 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
     color: THEME.colors.primary,
+  },
+  quarterActionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reminderIconBtn: {
+    padding: 2,
   },
   quarterLink: {
     flexDirection: 'row',

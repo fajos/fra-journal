@@ -5,9 +5,11 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Text,
+  Pressable,
   useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalState, LifeArea } from './src/types/journal';
 import {
   loadJournalState,
@@ -16,6 +18,9 @@ import {
 } from './src/storage/journalStorage';
 import { THEME } from './src/constants/theme';
 import { JournalNavBar, TabKey } from './src/navigation/JournalNavBar';
+import { authenticateWithBiometrics } from './src/services/biometricsService';
+import { hapticFeedback } from './src/services/hapticsService';
+import { ShieldCheck, Lock } from 'lucide-react-native';
 
 // Screens
 import { YearGoalsScreen } from './src/screens/YearGoalsScreen';
@@ -26,8 +31,11 @@ import { WeekPlanScreen } from './src/screens/WeekPlanScreen';
 import { MonthReviewScreen } from './src/screens/MonthReviewScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 
+const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
+
 export default function App() {
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
   const [state, setState] = useState<JournalState>(createInitialJournalState());
   const [currentTab, setCurrentTab] = useState<TabKey>('goals');
 
@@ -43,12 +51,31 @@ export default function App() {
 
   useEffect(() => {
     async function initialize() {
+      // Check biometric setting
+      const bioPref = await AsyncStorage.getItem(BIOMETRIC_KEY);
+      if (bioPref === 'true') {
+        setLocked(true);
+        const success = await authenticateWithBiometrics('Unlock your journal');
+        if (success) {
+          setLocked(false);
+        }
+      }
+
       const loaded = await loadJournalState();
       setState(loaded);
       setLoading(false);
     }
     initialize();
   }, []);
+
+  const handleUnlock = async () => {
+    hapticFeedback.medium();
+    const success = await authenticateWithBiometrics('Unlock your journal');
+    if (success) {
+      hapticFeedback.success();
+      setLocked(false);
+    }
+  };
 
   const handleUpdateState = (newState: JournalState) => {
     setState(newState);
@@ -60,11 +87,34 @@ export default function App() {
     }, 500);
   };
 
+  const handleTabChange = (tab: TabKey) => {
+    hapticFeedback.light();
+    setCurrentTab(tab);
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Opening your journal...</Text>
+      </View>
+    );
+  }
+
+  if (locked) {
+    return (
+      <View style={styles.lockedContainer}>
+        <View style={styles.lockBadge}>
+          <Lock size={32} color={THEME.colors.primary} />
+        </View>
+        <Text style={styles.lockedTitle}>Journal Protected</Text>
+        <Text style={styles.lockedSubtitle}>
+          This private journal is locked with biometric security.
+        </Text>
+        <Pressable onPress={handleUnlock} style={styles.unlockBtn}>
+          <ShieldCheck size={16} color="#FFFFFF" />
+          <Text style={styles.unlockBtnText}>Unlock with Biometrics</Text>
+        </Pressable>
       </View>
     );
   }
@@ -192,7 +242,7 @@ export default function App() {
       <View style={styles.outerContainer}>
         <View style={[styles.mainWrapper, isDesktop && styles.mainWrapperDesktop]}>
           <View style={styles.screenContainer}>{renderActiveScreen()}</View>
-          <JournalNavBar currentTab={currentTab} onSelectTab={setCurrentTab} />
+          <JournalNavBar currentTab={currentTab} onSelectTab={handleTabChange} />
         </View>
       </View>
     </SafeAreaView>
@@ -240,5 +290,51 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.fontFamilySerif,
     color: THEME.colors.textMuted,
     fontStyle: 'italic',
+  },
+  lockedContainer: {
+    flex: 1,
+    backgroundColor: THEME.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  },
+  lockBadge: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: THEME.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E6D3D7',
+  },
+  lockedTitle: {
+    fontSize: 22,
+    fontFamily: THEME.typography.fontFamilySerif,
+    fontWeight: '700',
+    color: THEME.colors.textDark,
+    marginBottom: 6,
+  },
+  lockedSubtitle: {
+    fontSize: 13,
+    color: THEME.colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 20,
+    maxWidth: 280,
+  },
+  unlockBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: THEME.radius.sm,
+  },
+  unlockBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
