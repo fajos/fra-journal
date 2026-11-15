@@ -130,6 +130,7 @@ export interface GoalEntry {
 }
 
 export interface JournalState {
-  year: number;
-  goals: Record<LifeArea, GoalEntry>;
+  year: number; // Currently active year
+  goals: Record<LifeArea, GoalEntry>; // Goals for the active year
+  yearsData: Record<number, Record<LifeArea, GoalEntry>>; // Multi-year persistent store
 }

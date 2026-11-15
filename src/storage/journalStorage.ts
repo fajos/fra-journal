@@ -10,7 +10,7 @@ import {
   GoalEntry,
 } from '../types/journal';
 
-const STORAGE_KEY = '@ejournal_state_v2';
+const STORAGE_KEY = '@ejournal_state_v3';
 
 export const MONTH_NAMES = [
   'January',
@@ -26,6 +26,16 @@ export const MONTH_NAMES = [
   'November',
   'December',
 ];
+
+/**
+ * Returns a rolling 4-year window centered around the current calendar year.
+ * For example, if current year is 2026 -> [2025, 2026, 2027, 2028].
+ * When 2029 arrives -> [2028, 2029, 2030, 2031].
+ * Older years automatically roll into the safe historical archive.
+ */
+export function getRollingYears(baseYear: number = new Date().getFullYear()): number[] {
+  return [baseYear - 1, baseYear, baseYear + 1, baseYear + 2];
+}
 
 export function createDefaultQuarterPlans(area: LifeArea): Record<1 | 2 | 3 | 4, QuarterPlan> {
   const isPersonalGrowth = area === 'Personal growth';
@@ -190,7 +200,7 @@ export function createDefaultMonthPlans(area: LifeArea): Record<number, MonthPla
   return monthPlans;
 }
 
-export function createInitialJournalState(year: number = new Date().getFullYear()): JournalState {
+export function createDefaultGoalsForYear(year: number): Record<LifeArea, GoalEntry> {
   const goals = {} as Record<LifeArea, GoalEntry>;
 
   LIFE_AREAS.forEach((item, index) => {
@@ -225,9 +235,17 @@ export function createInitialJournalState(year: number = new Date().getFullYear(
     };
   });
 
+  return goals;
+}
+
+export function createInitialJournalState(year: number = new Date().getFullYear()): JournalState {
+  const defaultGoals = createDefaultGoalsForYear(year);
   return {
     year,
-    goals,
+    goals: defaultGoals,
+    yearsData: {
+      [year]: defaultGoals,
+    },
   };
 }
 
@@ -236,32 +254,18 @@ export async function loadJournalState(): Promise<JournalState> {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.goals) {
-        const initial = createInitialJournalState(parsed.year || new Date().getFullYear());
-        const mergedGoals = { ...initial.goals };
+      const activeYear = parsed.year || new Date().getFullYear();
+      const yearsData = parsed.yearsData || { [activeYear]: parsed.goals };
 
-        LIFE_AREAS.forEach(({ key }) => {
-          if (parsed.goals[key]) {
-            mergedGoals[key] = {
-              ...initial.goals[key],
-              ...parsed.goals[key],
-              quarterPlans: {
-                ...initial.goals[key].quarterPlans,
-                ...(parsed.goals[key].quarterPlans || {}),
-              },
-              monthPlans: {
-                ...initial.goals[key].monthPlans,
-                ...(parsed.goals[key].monthPlans || {}),
-              },
-            };
-          }
-        });
+      // Ensure active year goals exist
+      const goals = yearsData[activeYear] || createDefaultGoalsForYear(activeYear);
+      yearsData[activeYear] = goals;
 
-        return {
-          year: parsed.year || initial.year,
-          goals: mergedGoals,
-        };
-      }
+      return {
+        year: activeYear,
+        goals,
+        yearsData,
+      };
     }
   } catch (err) {
     console.warn('Failed to load journal state from storage:', err);
@@ -273,7 +277,18 @@ export async function loadJournalState(): Promise<JournalState> {
 
 export async function saveJournalState(state: JournalState): Promise<void> {
   try {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // Keep yearsData synchronized with current year goals
+    const updatedYearsData = {
+      ...(state.yearsData || {}),
+      [state.year]: state.goals,
+    };
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...state,
+        yearsData: updatedYearsData,
+      })
+    );
   } catch (err) {
     console.error('Failed to save journal state:', err);
   }
@@ -285,6 +300,26 @@ export async function resetJournalState(): Promise<JournalState> {
   return fresh;
 }
 
+/**
+ * Switch active journal year, preserving previous year data into yearsData.
+ * Automatically initializes the target year if it's the first time visiting.
+ */
+export function switchJournalYear(state: JournalState, targetYear: number): JournalState {
+  const updatedYearsData = {
+    ...(state.yearsData || {}),
+    [state.year]: state.goals,
+  };
+
+  const targetGoals = updatedYearsData[targetYear] || createDefaultGoalsForYear(targetYear);
+  updatedYearsData[targetYear] = targetGoals;
+
+  return {
+    year: targetYear,
+    goals: targetGoals,
+    yearsData: updatedYearsData,
+  };
+}
+
 // ----------------- Strongly-Typed Updaters -----------------
 
 export function updateGoal(
@@ -294,14 +329,19 @@ export function updateGoal(
 ): JournalState {
   const goal = state.goals[area];
   if (!goal) return state;
+  const updatedGoals = {
+    ...state.goals,
+    [area]: {
+      ...goal,
+      ...updates,
+    },
+  };
   return {
     ...state,
-    goals: {
-      ...state.goals,
-      [area]: {
-        ...goal,
-        ...updates,
-      },
+    goals: updatedGoals,
+    yearsData: {
+      ...(state.yearsData || {}),
+      [state.year]: updatedGoals,
     },
   };
 }
@@ -315,20 +355,25 @@ export function updateGoalQuarter(
   const goal = state.goals[area];
   if (!goal) return state;
   const qPlan = goal.quarterPlans[quarter];
-  return {
-    ...state,
-    goals: {
-      ...state.goals,
-      [area]: {
-        ...goal,
-        quarterPlans: {
-          ...goal.quarterPlans,
-          [quarter]: {
-            ...qPlan,
-            ...updates,
-          },
+  const updatedGoals = {
+    ...state.goals,
+    [area]: {
+      ...goal,
+      quarterPlans: {
+        ...goal.quarterPlans,
+        [quarter]: {
+          ...qPlan,
+          ...updates,
         },
       },
+    },
+  };
+  return {
+    ...state,
+    goals: updatedGoals,
+    yearsData: {
+      ...(state.yearsData || {}),
+      [state.year]: updatedGoals,
     },
   };
 }
@@ -342,20 +387,25 @@ export function updateGoalMonth(
   const goal = state.goals[area];
   if (!goal) return state;
   const mPlan = goal.monthPlans[monthIndex];
-  return {
-    ...state,
-    goals: {
-      ...state.goals,
-      [area]: {
-        ...goal,
-        monthPlans: {
-          ...goal.monthPlans,
-          [monthIndex]: {
-            ...mPlan,
-            ...updates,
-          },
+  const updatedGoals = {
+    ...state.goals,
+    [area]: {
+      ...goal,
+      monthPlans: {
+        ...goal.monthPlans,
+        [monthIndex]: {
+          ...mPlan,
+          ...updates,
         },
       },
+    },
+  };
+  return {
+    ...state,
+    goals: updatedGoals,
+    yearsData: {
+      ...(state.yearsData || {}),
+      [state.year]: updatedGoals,
     },
   };
 }
@@ -369,23 +419,28 @@ export function updateGoalMonthReview(
   const goal = state.goals[area];
   if (!goal) return state;
   const mPlan = goal.monthPlans[monthIndex];
-  return {
-    ...state,
-    goals: {
-      ...state.goals,
-      [area]: {
-        ...goal,
-        monthPlans: {
-          ...goal.monthPlans,
-          [monthIndex]: {
-            ...mPlan,
-            review: {
-              ...mPlan.review,
-              ...updates,
-            },
+  const updatedGoals = {
+    ...state.goals,
+    [area]: {
+      ...goal,
+      monthPlans: {
+        ...goal.monthPlans,
+        [monthIndex]: {
+          ...mPlan,
+          review: {
+            ...mPlan.review,
+            ...updates,
           },
         },
       },
+    },
+  };
+  return {
+    ...state,
+    goals: updatedGoals,
+    yearsData: {
+      ...(state.yearsData || {}),
+      [state.year]: updatedGoals,
     },
   };
 }
@@ -401,26 +456,31 @@ export function updateGoalWeek(
   if (!goal) return state;
   const mPlan = goal.monthPlans[monthIndex];
   const wPlan = mPlan.weeks[weekIndex];
-  return {
-    ...state,
-    goals: {
-      ...state.goals,
-      [area]: {
-        ...goal,
-        monthPlans: {
-          ...goal.monthPlans,
-          [monthIndex]: {
-            ...mPlan,
-            weeks: {
-              ...mPlan.weeks,
-              [weekIndex]: {
-                ...wPlan,
-                ...updates,
-              },
+  const updatedGoals = {
+    ...state.goals,
+    [area]: {
+      ...goal,
+      monthPlans: {
+        ...goal.monthPlans,
+        [monthIndex]: {
+          ...mPlan,
+          weeks: {
+            ...mPlan.weeks,
+            [weekIndex]: {
+              ...wPlan,
+              ...updates,
             },
           },
         },
       },
+    },
+  };
+  return {
+    ...state,
+    goals: updatedGoals,
+    yearsData: {
+      ...(state.yearsData || {}),
+      [state.year]: updatedGoals,
     },
   };
 }

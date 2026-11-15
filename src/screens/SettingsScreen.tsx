@@ -13,7 +13,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalState } from '../types/journal';
 import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
-import { resetJournalState } from '../storage/journalStorage';
+import {
+  resetJournalState,
+  switchJournalYear,
+  getRollingYears,
+} from '../storage/journalStorage';
 import {
   scheduleWeeklyPlanningCadence,
   scheduleMonthlyReviewCadence,
@@ -31,7 +35,9 @@ import {
   Check,
   ShieldCheck,
   Bell,
-  Sparkles,
+  Archive,
+  Plus,
+  Clock,
 } from 'lucide-react-native';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
@@ -55,6 +61,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [sundayCadence, setSundayCadence] = useState(true);
   const [monthEndCadence, setMonthEndCadence] = useState(true);
+  const [customYearInput, setCustomYearInput] = useState('');
+
+  const rollingYears = getRollingYears();
+  const allStoredYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
+  const archivedYears = allStoredYears
+    .filter((y) => !rollingYears.includes(y))
+    .sort((a, b) => b - a);
 
   useEffect(() => {
     async function checkPrefs() {
@@ -75,6 +88,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const showStatus = (msg: string) => {
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(null), 4000);
+  };
+
+  const handleSelectYear = (targetYear: number) => {
+    hapticFeedback.selection();
+    const updated = switchJournalYear(state, targetYear);
+    onUpdateState(updated);
+    showStatus(`Switched active journal to ${targetYear}! All data preserved.`);
+  };
+
+  const handleAddCustomYear = () => {
+    const yr = parseInt(customYearInput.trim(), 10);
+    if (yr >= 2000 && yr <= 2100) {
+      handleSelectYear(yr);
+      setCustomYearInput('');
+    } else {
+      showStatus('Please enter a valid 4-digit year (e.g. 2029).');
+    }
   };
 
   const handleToggleBiometrics = async (enabled: boolean) => {
@@ -171,7 +201,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FloralHeader
         title="Journal Settings & Premium"
-        subtitle="Manage reminders, biometrics, annual PDF export, and backups"
+        subtitle="Manage rolling years, reminders, biometrics, and backups"
         year={state.year}
       />
 
@@ -183,6 +213,75 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Text style={styles.statusText}>{statusMessage}</Text>
           </View>
         )}
+
+        {/* Rolling 4-Year Window Setting */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Calendar size={18} color={THEME.colors.primary} />
+            <Text style={styles.cardTitle}>Active 4-Year Rolling Window</Text>
+          </View>
+          <Text style={styles.cardDesc}>
+            Your journal maintains an automatic 4-year rolling window centered on today. As years advance (e.g. after 2028 &rarr; 2029), the window automatically advances and older years are preserved in your archive.
+          </Text>
+
+          <View style={styles.yearRow}>
+            {rollingYears.map((yr) => (
+              <Pressable
+                key={yr}
+                onPress={() => handleSelectYear(yr)}
+                style={[styles.yearChip, state.year === yr && styles.yearChipActive]}
+              >
+                <Text style={[styles.yearChipText, state.year === yr && styles.yearChipTextActive]}>
+                  {yr}
+                </Text>
+                {state.year === yr && <View style={styles.activeDot} />}
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Add Future Year / Custom Year */}
+          <View style={styles.customYearRow}>
+            <TextInput
+              value={customYearInput}
+              onChangeText={setCustomYearInput}
+              placeholder="e.g. 2029"
+              placeholderTextColor={THEME.colors.textLight}
+              keyboardType="numeric"
+              maxLength={4}
+              style={styles.customYearInput}
+            />
+            <Pressable onPress={handleAddCustomYear} style={styles.addYearBtn}>
+              <Plus size={14} color="#FFFFFF" />
+              <Text style={styles.addYearBtnText}>Open Year</Text>
+            </Pressable>
+          </View>
+
+          {/* Historical Archive Drawer */}
+          {archivedYears.length > 0 && (
+            <View style={styles.archiveSection}>
+              <View style={styles.archiveHeader}>
+                <Archive size={14} color={THEME.colors.primary} />
+                <Text style={styles.archiveTitle}>Historical Years Archive</Text>
+              </View>
+              <Text style={styles.archiveHint}>
+                Past years that have rolled forward are preserved here forever:
+              </Text>
+              <View style={styles.archivePills}>
+                {archivedYears.map((ayr) => (
+                  <Pressable
+                    key={ayr}
+                    onPress={() => handleSelectYear(ayr)}
+                    style={[styles.archivePill, state.year === ayr && styles.archivePillActive]}
+                  >
+                    <Text style={[styles.archivePillText, state.year === ayr && styles.archivePillTextActive]}>
+                      {ayr} Journal
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* Biometric Privacy Lock */}
         <View style={styles.card}>
@@ -249,33 +348,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Text style={styles.cardTitle}>Printable PDF Annual Keepsake</Text>
           </View>
           <Text style={styles.cardDesc}>
-            Generate an editorial-grade, printable PDF book of your entire year's goals, milestones, and reflections. Perfect for archiving or physical printing.
+            Generate an editorial-grade, printable PDF book of your {state.year} goals, milestones, and reflections.
           </Text>
           <Pressable onPress={handleExportPDF} style={styles.buttonPrimary}>
             <Printer size={15} color="#FFFFFF" />
-            <Text style={styles.buttonPrimaryText}>Generate Annual PDF Booklet</Text>
+            <Text style={styles.buttonPrimaryText}>Generate {state.year} PDF Keepsake</Text>
           </Pressable>
-        </View>
-
-        {/* Year Setting */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Calendar size={18} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>Journal Year</Text>
-          </View>
-          <View style={styles.yearRow}>
-            {([2025, 2026, 2027, 2028] as const).map((yr) => (
-              <Pressable
-                key={yr}
-                onPress={() => onUpdateState({ ...state, year: yr })}
-                style={[styles.yearChip, state.year === yr && styles.yearChipActive]}
-              >
-                <Text style={[styles.yearChipText, state.year === yr && styles.yearChipTextActive]}>
-                  {yr}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
         </View>
 
         {/* Backup & Restore */}
@@ -285,17 +363,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Text style={styles.cardTitle}>Offline Data Backup (JSON)</Text>
           </View>
           <Text style={styles.cardDesc}>
-            All goals, quarterly milestones, and weekly planners are stored 100% locally and privately on this device.
+            All years and nested goals are stored 100% locally and privately on this device.
           </Text>
 
           <View style={styles.buttonRow}>
             <Pressable onPress={handleExport} style={styles.buttonSecondary}>
               <Download size={14} color={THEME.colors.textDark} />
-              <Text style={styles.buttonSecondaryText}>Export JSON</Text>
+              <Text style={styles.buttonSecondaryText}>Export Backup</Text>
             </Pressable>
             <Pressable onPress={handleImport} style={styles.buttonSecondary}>
               <Upload size={14} color={THEME.colors.textDark} />
-              <Text style={styles.buttonSecondaryText}>Restore JSON</Text>
+              <Text style={styles.buttonSecondaryText}>Restore Backup</Text>
             </Pressable>
           </View>
 
@@ -384,6 +462,121 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 12,
   },
+  yearRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  yearChip: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: 'center',
+    borderRadius: THEME.radius.sm,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+    position: 'relative',
+  },
+  yearChipActive: {
+    backgroundColor: THEME.colors.primary,
+    borderColor: THEME.colors.primary,
+  },
+  yearChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: THEME.colors.textDark,
+  },
+  yearChipTextActive: {
+    color: '#FFFFFF',
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  customYearRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  customYearInput: {
+    flex: 1,
+    backgroundColor: '#FAF8F5',
+    borderWidth: 1,
+    borderColor: THEME.colors.linedPaper,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    fontSize: 13,
+    color: THEME.colors.textDark,
+  },
+  addYearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  addYearBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  archiveSection: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.linedPaper,
+    paddingTop: 10,
+  },
+  archiveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  archiveTitle: {
+    fontSize: 13,
+    fontFamily: THEME.typography.fontFamilySerif,
+    fontWeight: '700',
+    color: THEME.colors.primary,
+  },
+  archiveHint: {
+    fontSize: 11.5,
+    color: THEME.colors.textMuted,
+    marginBottom: 8,
+  },
+  archivePills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  archivePill: {
+    backgroundColor: '#FCFAF7',
+    borderWidth: 1,
+    borderColor: THEME.colors.linedPaper,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  archivePillActive: {
+    backgroundColor: THEME.colors.primaryLight,
+    borderColor: THEME.colors.primary,
+  },
+  archivePillText: {
+    fontSize: 11.5,
+    color: THEME.colors.textDark,
+    fontWeight: '500',
+  },
+  archivePillTextActive: {
+    color: THEME.colors.primary,
+    fontWeight: '700',
+  },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -403,31 +596,6 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: THEME.colors.textMuted,
     marginTop: 2,
-  },
-  yearRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  yearChip: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: THEME.radius.sm,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  yearChipActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
-  },
-  yearChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  yearChipTextActive: {
-    color: '#FFFFFF',
   },
   buttonRow: {
     flexDirection: 'row',
