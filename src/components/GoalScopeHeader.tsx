@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LifeArea, LIFE_AREAS } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import {
   Sparkles,
   Heart,
@@ -24,7 +24,7 @@ interface GoalScopeHeaderProps {
   weekIndex?: number;
 }
 
-export const getLifeAreaIcon = (area: LifeArea, size = 15, color = THEME.colors.primary) => {
+export const getLifeAreaIcon = (area: LifeArea, size = 15, color = '#8E5B67') => {
   switch (area) {
     case 'Personal growth':
       return <Sparkles size={size} color={color} />;
@@ -53,33 +53,43 @@ export const GoalScopeHeader: React.FC<GoalScopeHeaderProps> = ({
   monthName,
   weekIndex,
 }) => {
+  const { theme } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.isDark ? 'rgba(28, 28, 33, 0.9)' : 'rgba(255, 255, 255, 0.75)',
+          borderBottomColor: theme.colors.cardBorder,
+        },
+      ]}
+    >
       {/* Breadcrumb banner */}
       <View style={styles.breadcrumbRow}>
         <View style={styles.crumbItem}>
-          {getLifeAreaIcon(selectedArea, 13, THEME.colors.primary)}
-          <Text style={styles.crumbTextBold}>{selectedArea}</Text>
+          {getLifeAreaIcon(selectedArea, 13, theme.colors.primary)}
+          <Text style={[styles.crumbTextBold, { color: theme.colors.primary }]}>{selectedArea}</Text>
         </View>
 
         {quarter !== undefined && (
           <>
-            <ChevronRight size={11} color={THEME.colors.textLight} />
-            <Text style={styles.crumbText}>Q{quarter}</Text>
+            <ChevronRight size={11} color={theme.colors.textLight} />
+            <Text style={[styles.crumbText, { color: theme.colors.textMuted }]}>Q{quarter}</Text>
           </>
         )}
 
         {monthName && (
           <>
-            <ChevronRight size={11} color={THEME.colors.textLight} />
-            <Text style={styles.crumbText}>{monthName}</Text>
+            <ChevronRight size={11} color={theme.colors.textLight} />
+            <Text style={[styles.crumbText, { color: theme.colors.textMuted }]}>{monthName}</Text>
           </>
         )}
 
         {weekIndex !== undefined && (
           <>
-            <ChevronRight size={11} color={THEME.colors.textLight} />
-            <Text style={styles.crumbTextHighlight}>Week {weekIndex}</Text>
+            <ChevronRight size={11} color={theme.colors.textLight} />
+            <Text style={[styles.crumbTextHighlight, { color: theme.colors.textDark }]}>Week {weekIndex}</Text>
           </>
         )}
       </View>
@@ -87,8 +97,8 @@ export const GoalScopeHeader: React.FC<GoalScopeHeaderProps> = ({
       {/* Goal Summary banner */}
       {goalText ? (
         <View style={styles.goalPreviewBar}>
-          <Target size={13} color={THEME.colors.primary} />
-          <Text style={styles.goalPreviewText} numberOfLines={1}>
+          <Target size={13} color={theme.colors.primary} />
+          <Text style={[styles.goalPreviewText, { color: theme.colors.textDark }]} numberOfLines={1}>
             {goalText}
           </Text>
         </View>
@@ -106,11 +116,22 @@ export const GoalScopeHeader: React.FC<GoalScopeHeaderProps> = ({
             <Pressable
               key={item.key}
               onPress={() => onSelectArea(item.key)}
-              style={[styles.chip, isActive && styles.chipActive]}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
+                  borderColor: isActive ? theme.colors.primary : theme.colors.cardBorder,
+                },
+              ]}
               hitSlop={4}
             >
-              {getLifeAreaIcon(item.key, 12, isActive ? '#FFFFFF' : THEME.colors.primary)}
-              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+              {getLifeAreaIcon(item.key, 12, isActive ? '#FFFFFF' : theme.colors.primary)}
+              <Text
+                style={[
+                  styles.chipText,
+                  { color: isActive ? '#FFFFFF' : theme.colors.textDark },
+                ]}
+              >
                 {item.label}
               </Text>
             </Pressable>
@@ -123,9 +144,7 @@ export const GoalScopeHeader: React.FC<GoalScopeHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.cardBorder,
     paddingTop: 8,
     paddingBottom: 6,
     marginBottom: 8,
@@ -145,16 +164,13 @@ const styles = StyleSheet.create({
   crumbTextBold: {
     fontSize: 12,
     fontWeight: '700',
-    color: THEME.colors.primary,
   },
   crumbText: {
     fontSize: 12,
-    color: THEME.colors.textMuted,
     fontWeight: '500',
   },
   crumbTextHighlight: {
     fontSize: 12,
-    color: THEME.colors.textDark,
     fontWeight: '700',
   },
   goalPreviewBar: {
@@ -167,7 +183,6 @@ const styles = StyleSheet.create({
   goalPreviewText: {
     fontSize: 12,
     fontStyle: 'italic',
-    color: THEME.colors.textDark,
     flex: 1,
   },
   chipsScroll: {
@@ -182,20 +197,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  chipActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
   },
   chipText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
   },
 });

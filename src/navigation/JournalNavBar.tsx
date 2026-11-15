@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import {
   Sparkles,
   Layers,
@@ -9,7 +9,6 @@ import {
   Clock,
   RotateCcw,
   Settings,
-  Heart,
 } from 'lucide-react-native';
 
 export type TabKey = 'goals' | 'breakdown' | 'quarters' | 'months' | 'week' | 'review' | 'settings';
@@ -22,6 +21,7 @@ interface JournalNavBarProps {
 export const JournalNavBar: React.FC<JournalNavBarProps> = ({ currentTab, onSelectTab }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const { theme } = useTheme();
 
   const tabs: { key: TabKey; label: string; icon: React.FC<{ size: number; color: string }> }[] = [
     { key: 'goals', label: 'Year Goals', icon: Sparkles },
@@ -34,7 +34,16 @@ export const JournalNavBar: React.FC<JournalNavBarProps> = ({ currentTab, onSele
   ];
 
   return (
-    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+    <View
+      style={[
+        styles.container,
+        isDesktop && styles.containerDesktop,
+        {
+          backgroundColor: theme.colors.cardBackground,
+          borderTopColor: theme.colors.cardBorder,
+        },
+      ]}
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -42,19 +51,35 @@ export const JournalNavBar: React.FC<JournalNavBarProps> = ({ currentTab, onSele
       >
         {tabs.map(({ key, label, icon: IconComponent }) => {
           const isActive = currentTab === key;
-          const color = isActive ? THEME.colors.primary : THEME.colors.textMuted;
+          const color = isActive ? theme.colors.primary : theme.colors.textMuted;
           return (
             <Pressable
               key={key}
               onPress={() => onSelectTab(key)}
-              style={[styles.tabButton, isActive && styles.tabButtonActive]}
+              style={[
+                styles.tabButton,
+                isActive && { backgroundColor: theme.colors.primaryLight },
+              ]}
               hitSlop={6}
             >
               <IconComponent size={isDesktop ? 18 : 17} color={color} />
-              <Text style={[styles.tabLabel, { color }, isActive && styles.tabLabelActive]}>
+              <Text
+                style={[
+                  styles.tabLabel,
+                  { color, fontFamily: theme.typography.fontFamilySans },
+                  isActive && styles.tabLabelActive,
+                ]}
+              >
                 {label}
               </Text>
-              {isActive && <View style={styles.activeIndicator} />}
+              {isActive && (
+                <View
+                  style={[
+                    styles.activeIndicator,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                />
+              )}
             </Pressable>
           );
         })}
@@ -65,11 +90,8 @@ export const JournalNavBar: React.FC<JournalNavBarProps> = ({ currentTab, onSele
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.cardBorder,
     paddingVertical: 6,
-    ...THEME.shadow,
   },
   containerDesktop: {
     paddingVertical: 8,
@@ -91,16 +113,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 5,
     paddingHorizontal: 10,
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
     position: 'relative',
     minWidth: 54,
   },
-  tabButtonActive: {
-    backgroundColor: THEME.colors.primaryLight,
-  },
   tabLabel: {
     fontSize: 10.5,
-    fontFamily: THEME.typography.fontFamilySans,
     fontWeight: '500',
     marginTop: 3,
   },
@@ -113,6 +131,5 @@ const styles = StyleSheet.create({
     width: 14,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: THEME.colors.primary,
   },
 });

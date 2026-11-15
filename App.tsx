@@ -16,7 +16,7 @@ import {
   saveJournalState,
   createInitialJournalState,
 } from './src/storage/journalStorage';
-import { THEME } from './src/constants/theme';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { JournalNavBar, TabKey } from './src/navigation/JournalNavBar';
 import { authenticateWithBiometrics } from './src/services/biometricsService';
 import { hapticFeedback } from './src/services/hapticsService';
@@ -33,7 +33,8 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
 
-export default function App() {
+function AppContent() {
+  const { theme, isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [state, setState] = useState<JournalState>(createInitialJournalState());
@@ -94,24 +95,28 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={THEME.colors.primary} />
-        <Text style={styles.loadingText}>Opening your journal...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.textMuted, fontFamily: theme.typography.fontFamilySerif }]}>
+          Opening your journal...
+        </Text>
       </View>
     );
   }
 
   if (locked) {
     return (
-      <View style={styles.lockedContainer}>
-        <View style={styles.lockBadge}>
-          <Lock size={32} color={THEME.colors.primary} />
+      <View style={[styles.lockedContainer, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.lockBadge, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.cardBorder }]}>
+          <Lock size={32} color={theme.colors.primary} />
         </View>
-        <Text style={styles.lockedTitle}>Journal Protected</Text>
-        <Text style={styles.lockedSubtitle}>
+        <Text style={[styles.lockedTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+          Journal Protected
+        </Text>
+        <Text style={[styles.lockedSubtitle, { color: theme.colors.textMuted }]}>
           This private journal is locked with biometric security.
         </Text>
-        <Pressable onPress={handleUnlock} style={styles.unlockBtn}>
+        <Pressable onPress={handleUnlock} style={[styles.unlockBtn, { backgroundColor: theme.colors.primary }]}>
           <ShieldCheck size={16} color="#FFFFFF" />
           <Text style={styles.unlockBtnText}>Unlock with Biometrics</Text>
         </Pressable>
@@ -237,10 +242,19 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
-      <View style={styles.outerContainer}>
-        <View style={[styles.mainWrapper, isDesktop && styles.mainWrapperDesktop]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <View style={[styles.outerContainer, { backgroundColor: theme.colors.deskBackground }]}>
+        <View
+          style={[
+            styles.mainWrapper,
+            { backgroundColor: theme.colors.background },
+            isDesktop && [
+              styles.mainWrapperDesktop,
+              { borderColor: theme.colors.cardBorder },
+            ],
+          ]}
+        >
           <View style={styles.screenContainer}>{renderActiveScreen()}</View>
           <JournalNavBar currentTab={currentTab} onSelectTab={handleTabChange} />
         </View>
@@ -249,30 +263,33 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   outerContainer: {
     flex: 1,
-    backgroundColor: '#F3EFEA',
     alignItems: 'center',
     justifyContent: 'center',
   },
   mainWrapper: {
     flex: 1,
     width: '100%',
-    backgroundColor: THEME.colors.background,
   },
   mainWrapperDesktop: {
     maxWidth: 840,
     height: '96%',
-    borderRadius: THEME.radius.lg,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     overflow: 'hidden',
-    ...THEME.shadow,
     marginVertical: 12,
   },
   screenContainer: {
@@ -280,20 +297,16 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
   loadingText: {
     fontSize: 15,
-    fontFamily: THEME.typography.fontFamilySerif,
-    color: THEME.colors.textMuted,
     fontStyle: 'italic',
   },
   lockedContainer: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 30,
@@ -302,23 +315,18 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: THEME.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E6D3D7',
   },
   lockedTitle: {
     fontSize: 22,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
     marginBottom: 6,
   },
   lockedSubtitle: {
     fontSize: 13,
-    color: THEME.colors.textMuted,
     textAlign: 'center',
     marginBottom: 20,
     maxWidth: 280,
@@ -327,10 +335,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: THEME.colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
   },
   unlockBtnText: {
     color: '#FFFFFF',

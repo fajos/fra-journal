@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalState } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { THEMES, ThemeKey } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';
 import {
   resetJournalState,
@@ -29,7 +30,6 @@ import {
   Download,
   Upload,
   RotateCcw,
-  BookOpen,
   Calendar,
   Printer,
   Check,
@@ -37,7 +37,10 @@ import {
   Bell,
   Archive,
   Plus,
-  Clock,
+  Palette,
+  Sun,
+  Moon,
+  Feather,
 } from 'lucide-react-native';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
@@ -53,6 +56,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   state,
   onUpdateState,
 }) => {
+  const { theme, themeKey, setThemeKey } = useTheme();
   const [jsonInput, setJsonInput] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -197,11 +201,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     showStatus('Reset to fresh starter journal.');
   };
 
+  const themeList: { key: ThemeKey; title: string; desc: string; icon: any }[] = [
+    {
+      key: 'warmPaper',
+      title: 'Warm Linen Paper',
+      desc: 'The original physical journal look with dusty rose and warm taupe tones.',
+      icon: Feather,
+    },
+    {
+      key: 'pureLight',
+      title: 'Pure Minimalist Light',
+      desc: 'Clean daylight white with crisp contrast and modern indigo accents.',
+      icon: Sun,
+    },
+    {
+      key: 'midnightDark',
+      title: 'Midnight Velvet Dark',
+      desc: 'Deep obsidian charcoal with luminous rose accents for calm evening writing.',
+      icon: Moon,
+    },
+    {
+      key: 'botanicalSage',
+      title: 'Botanical Sage Calm',
+      desc: 'Eucalyptus green and earthy tones inspired by nature and tranquility.',
+      icon: Palette,
+    },
+  ];
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <FloralHeader
-        title="Journal Settings & Premium"
-        subtitle="Manage rolling years, reminders, biometrics, and backups"
+        title="Settings & Appearance"
+        subtitle="Customize themes, rolling years, reminders, and biometrics"
         year={state.year}
       />
 
@@ -209,34 +243,121 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Status Alert */}
         {statusMessage && (
           <View style={styles.statusBox}>
-            <Check size={16} color={THEME.colors.success} />
-            <Text style={styles.statusText}>{statusMessage}</Text>
+            <Check size={16} color={theme.colors.success} />
+            <Text style={[styles.statusText, { color: theme.colors.success }]}>{statusMessage}</Text>
           </View>
         )}
 
-        {/* Rolling 4-Year Window Setting */}
-        <View style={styles.card}>
+        {/* Visual Theme Selector Card */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Calendar size={18} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>Active 4-Year Rolling Window</Text>
+            <Palette size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              App Appearance & Theme
+            </Text>
           </View>
-          <Text style={styles.cardDesc}>
-            Your journal maintains an automatic 4-year rolling window centered on today. As years advance (e.g. after 2028 &rarr; 2029), the window automatically advances and older years are preserved in your archive.
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Choose an aesthetic that matches your journaling mood:
+          </Text>
+
+          <View style={styles.themesGrid}>
+            {themeList.map(({ key, title, desc, icon: IconComponent }) => {
+              const itemTheme = THEMES[key];
+              const isSelected = themeKey === key;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setThemeKey(key)}
+                  style={[
+                    styles.themeOptionCard,
+                    {
+                      backgroundColor: itemTheme.colors.background,
+                      borderColor: isSelected ? theme.colors.primary : theme.colors.cardBorder,
+                      borderWidth: isSelected ? 2 : 1,
+                    },
+                  ]}
+                >
+                  <View style={styles.themeOptionHeader}>
+                    <View style={styles.themeTitleRow}>
+                      <IconComponent size={15} color={itemTheme.colors.primary} />
+                      <Text style={[styles.themeOptionTitle, { color: itemTheme.colors.textDark }]}>
+                        {title}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <View style={[styles.selectedCheck, { backgroundColor: theme.colors.primary }]}>
+                        <Check size={11} color="#FFFFFF" strokeWidth={3} />
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={[styles.themeOptionDesc, { color: itemTheme.colors.textMuted }]}>
+                    {desc}
+                  </Text>
+
+                  {/* Palette Swatches */}
+                  <View style={styles.swatchRow}>
+                    <View style={[styles.swatch, { backgroundColor: itemTheme.colors.background }]} />
+                    <View style={[styles.swatch, { backgroundColor: itemTheme.colors.primary }]} />
+                    <View style={[styles.swatch, { backgroundColor: itemTheme.colors.secondary }]} />
+                    <View style={[styles.swatch, { backgroundColor: itemTheme.colors.textDark }]} />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Rolling 4-Year Window Setting */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <Calendar size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Active 4-Year Rolling Window
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Your journal automatically maintains an active 4-year rolling window. As years advance (e.g. after 2028 &rarr; 2029), older years are safely preserved in your archive.
           </Text>
 
           <View style={styles.yearRow}>
-            {rollingYears.map((yr) => (
-              <Pressable
-                key={yr}
-                onPress={() => handleSelectYear(yr)}
-                style={[styles.yearChip, state.year === yr && styles.yearChipActive]}
-              >
-                <Text style={[styles.yearChipText, state.year === yr && styles.yearChipTextActive]}>
-                  {yr}
-                </Text>
-                {state.year === yr && <View style={styles.activeDot} />}
-              </Pressable>
-            ))}
+            {rollingYears.map((yr) => {
+              const isAct = state.year === yr;
+              return (
+                <Pressable
+                  key={yr}
+                  onPress={() => handleSelectYear(yr)}
+                  style={[
+                    styles.yearChip,
+                    {
+                      backgroundColor: isAct ? theme.colors.primary : theme.colors.cardBackground,
+                      borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.yearChipText, { color: isAct ? '#FFFFFF' : theme.colors.textDark }]}>
+                    {yr}
+                  </Text>
+                  {isAct && <View style={styles.activeDot} />}
+                </Pressable>
+              );
+            })}
           </View>
 
           {/* Add Future Year / Custom Year */}
@@ -245,12 +366,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               value={customYearInput}
               onChangeText={setCustomYearInput}
               placeholder="e.g. 2029"
-              placeholderTextColor={THEME.colors.textLight}
+              placeholderTextColor={theme.colors.textLight}
               keyboardType="numeric"
               maxLength={4}
-              style={styles.customYearInput}
+              style={[
+                styles.customYearInput,
+                {
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.linedPaper,
+                  color: theme.colors.textDark,
+                },
+              ]}
             />
-            <Pressable onPress={handleAddCustomYear} style={styles.addYearBtn}>
+            <Pressable
+              onPress={handleAddCustomYear}
+              style={[styles.addYearBtn, { backgroundColor: theme.colors.primary }]}
+            >
               <Plus size={14} color="#FFFFFF" />
               <Text style={styles.addYearBtnText}>Open Year</Text>
             </Pressable>
@@ -258,12 +389,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
           {/* Historical Archive Drawer */}
           {archivedYears.length > 0 && (
-            <View style={styles.archiveSection}>
+            <View style={[styles.archiveSection, { borderTopColor: theme.colors.linedPaper }]}>
               <View style={styles.archiveHeader}>
-                <Archive size={14} color={THEME.colors.primary} />
-                <Text style={styles.archiveTitle}>Historical Years Archive</Text>
+                <Archive size={14} color={theme.colors.primary} />
+                <Text style={[styles.archiveTitle, { color: theme.colors.primary }]}>Historical Years Archive</Text>
               </View>
-              <Text style={styles.archiveHint}>
+              <Text style={[styles.archiveHint, { color: theme.colors.textMuted }]}>
                 Past years that have rolled forward are preserved here forever:
               </Text>
               <View style={styles.archivePills}>
@@ -271,9 +402,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <Pressable
                     key={ayr}
                     onPress={() => handleSelectYear(ayr)}
-                    style={[styles.archivePill, state.year === ayr && styles.archivePillActive]}
+                    style={[
+                      styles.archivePill,
+                      {
+                        backgroundColor: state.year === ayr ? theme.colors.primaryLight : theme.colors.cardBackground,
+                        borderColor: state.year === ayr ? theme.colors.primary : theme.colors.cardBorder,
+                      },
+                    ]}
                   >
-                    <Text style={[styles.archivePillText, state.year === ayr && styles.archivePillTextActive]}>
+                    <Text
+                      style={[
+                        styles.archivePillText,
+                        {
+                          color: state.year === ayr ? theme.colors.primary : theme.colors.textDark,
+                          fontWeight: state.year === ayr ? '700' : '500',
+                        },
+                      ]}
+                    >
                       {ayr} Journal
                     </Text>
                   </Pressable>
@@ -284,96 +429,145 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </View>
 
         {/* Biometric Privacy Lock */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <ShieldCheck size={18} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>Biometric Privacy Lock</Text>
+            <ShieldCheck size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Biometric Privacy Lock
+            </Text>
           </View>
-          <Text style={styles.cardDesc}>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             Keep your deeply personal thoughts, finances, and reflections private with FaceID, TouchID, or Passcode on app launch.
           </Text>
 
           <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Require Biometric Unlock</Text>
+            <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>Require Biometric Unlock</Text>
             <Switch
               value={biometricEnabled}
               onValueChange={handleToggleBiometrics}
-              trackColor={{ false: THEME.colors.linedPaper, true: THEME.colors.primaryLight }}
-              thumbColor={biometricEnabled ? THEME.colors.primary : '#FFFFFF'}
+              trackColor={{ false: theme.colors.linedPaper, true: theme.colors.primaryLight }}
+              thumbColor={biometricEnabled ? theme.colors.primary : '#FFFFFF'}
             />
           </View>
         </View>
 
         {/* Automated Cadence Reminders */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Bell size={18} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>Cadence Reminders & Habits</Text>
+            <Bell size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Cadence Reminders & Habits
+            </Text>
           </View>
-          <Text style={styles.cardDesc}>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             Stay accountable with timed prompts on your phone or web browser.
           </Text>
 
           <View style={styles.switchRow}>
             <View style={styles.switchMeta}>
-              <Text style={styles.switchLabel}>Sunday Weekly Planning (7:00 PM)</Text>
-              <Text style={styles.switchSub}>Nudge to review prior week and set Top 3 priorities</Text>
+              <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>Sunday Weekly Planning (7:00 PM)</Text>
+              <Text style={[styles.switchSub, { color: theme.colors.textMuted }]}>Nudge to review prior week and set Top 3 priorities</Text>
             </View>
             <Switch
               value={sundayCadence}
               onValueChange={handleToggleSundayCadence}
-              trackColor={{ false: THEME.colors.linedPaper, true: THEME.colors.primaryLight }}
-              thumbColor={sundayCadence ? THEME.colors.primary : '#FFFFFF'}
+              trackColor={{ false: theme.colors.linedPaper, true: theme.colors.primaryLight }}
+              thumbColor={sundayCadence ? theme.colors.primary : '#FFFFFF'}
             />
           </View>
 
-          <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: THEME.colors.linedPaper }]}>
+          <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: theme.colors.linedPaper }]}>
             <View style={styles.switchMeta}>
-              <Text style={styles.switchLabel}>Month-End Review Nudge</Text>
-              <Text style={styles.switchSub}>Prompts you to reflect on achievements and carry forwards</Text>
+              <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>Month-End Review Nudge</Text>
+              <Text style={[styles.switchSub, { color: theme.colors.textMuted }]}>Prompts you to reflect on achievements and carry forwards</Text>
             </View>
             <Switch
               value={monthEndCadence}
               onValueChange={handleToggleMonthEndCadence}
-              trackColor={{ false: THEME.colors.linedPaper, true: THEME.colors.primaryLight }}
-              thumbColor={monthEndCadence ? THEME.colors.primary : '#FFFFFF'}
+              trackColor={{ false: theme.colors.linedPaper, true: theme.colors.primaryLight }}
+              thumbColor={monthEndCadence ? theme.colors.primary : '#FFFFFF'}
             />
           </View>
         </View>
 
         {/* Export Keepsake PDF Booklet */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Printer size={18} color={THEME.colors.secondary} />
-            <Text style={styles.cardTitle}>Printable PDF Annual Keepsake</Text>
+            <Printer size={18} color={theme.colors.secondary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Printable PDF Annual Keepsake
+            </Text>
           </View>
-          <Text style={styles.cardDesc}>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             Generate an editorial-grade, printable PDF book of your {state.year} goals, milestones, and reflections.
           </Text>
-          <Pressable onPress={handleExportPDF} style={styles.buttonPrimary}>
+          <Pressable
+            onPress={handleExportPDF}
+            style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary }]}
+          >
             <Printer size={15} color="#FFFFFF" />
             <Text style={styles.buttonPrimaryText}>Generate {state.year} PDF Keepsake</Text>
           </Pressable>
         </View>
 
         {/* Backup & Restore */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Download size={18} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>Offline Data Backup (JSON)</Text>
+            <Download size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Offline Data Backup (JSON)
+            </Text>
           </View>
-          <Text style={styles.cardDesc}>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             All years and nested goals are stored 100% locally and privately on this device.
           </Text>
 
           <View style={styles.buttonRow}>
-            <Pressable onPress={handleExport} style={styles.buttonSecondary}>
-              <Download size={14} color={THEME.colors.textDark} />
-              <Text style={styles.buttonSecondaryText}>Export Backup</Text>
+            <Pressable
+              onPress={handleExport}
+              style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder }]}
+            >
+              <Download size={14} color={theme.colors.textDark} />
+              <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>Export Backup</Text>
             </Pressable>
-            <Pressable onPress={handleImport} style={styles.buttonSecondary}>
-              <Upload size={14} color={THEME.colors.textDark} />
-              <Text style={styles.buttonSecondaryText}>Restore Backup</Text>
+            <Pressable
+              onPress={handleImport}
+              style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder }]}
+            >
+              <Upload size={14} color={theme.colors.textDark} />
+              <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>Restore Backup</Text>
             </Pressable>
           </View>
 
@@ -381,20 +575,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             value={jsonInput}
             onChangeText={setJsonInput}
             placeholder="Paste backup JSON here to restore, or view exported JSON..."
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={4}
-            style={styles.jsonBox}
+            style={[
+              styles.jsonBox,
+              {
+                backgroundColor: theme.colors.background,
+                borderColor: theme.colors.linedPaper,
+                color: theme.colors.textDark,
+              },
+            ]}
           />
         </View>
 
         {/* Reset */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <RotateCcw size={18} color={THEME.colors.danger} />
-            <Text style={styles.cardTitle}>Reset Journal</Text>
+            <RotateCcw size={18} color={theme.colors.danger} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Reset Journal
+            </Text>
           </View>
-          <Text style={styles.cardDesc}>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             Reset all entries back to the clean starter template.
           </Text>
           <Pressable onPress={handleReset} style={styles.dangerButton}>
@@ -410,7 +621,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   content: {
     paddingBottom: 40,
@@ -426,23 +636,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#C2E0C6',
     padding: 12,
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
     marginBottom: 14,
   },
   statusText: {
     fontSize: 13,
-    color: THEME.colors.success,
     fontWeight: '600',
     flex: 1,
   },
   card: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 16,
     marginBottom: 14,
-    ...THEME.shadow,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -452,15 +658,57 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   cardDesc: {
     fontSize: 13,
-    color: THEME.colors.textMuted,
     lineHeight: 18,
     marginBottom: 12,
+  },
+  themesGrid: {
+    gap: 10,
+  },
+  themeOptionCard: {
+    borderRadius: 10,
+    padding: 12,
+  },
+  themeOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  themeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  themeOptionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  selectedCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeOptionDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  swatchRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  swatch: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   yearRow: {
     flexDirection: 'row',
@@ -471,23 +719,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 9,
     alignItems: 'center',
-    borderRadius: THEME.radius.sm,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     position: 'relative',
-  },
-  yearChipActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
   },
   yearChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  yearChipTextActive: {
-    color: '#FFFFFF',
   },
   activeDot: {
     position: 'absolute',
@@ -505,20 +743,16 @@ const styles = StyleSheet.create({
   },
   customYearInput: {
     flex: 1,
-    backgroundColor: '#FAF8F5',
     borderWidth: 1,
-    borderColor: THEME.colors.linedPaper,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 7,
     fontSize: 13,
-    color: THEME.colors.textDark,
   },
   addYearBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: THEME.colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 8,
@@ -531,7 +765,6 @@ const styles = StyleSheet.create({
   archiveSection: {
     marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.linedPaper,
     paddingTop: 10,
   },
   archiveHeader: {
@@ -542,13 +775,10 @@ const styles = StyleSheet.create({
   },
   archiveTitle: {
     fontSize: 13,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.primary,
   },
   archiveHint: {
     fontSize: 11.5,
-    color: THEME.colors.textMuted,
     marginBottom: 8,
   },
   archivePills: {
@@ -557,25 +787,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   archivePill: {
-    backgroundColor: '#FCFAF7',
     borderWidth: 1,
-    borderColor: THEME.colors.linedPaper,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  archivePillActive: {
-    backgroundColor: THEME.colors.primaryLight,
-    borderColor: THEME.colors.primary,
-  },
   archivePillText: {
     fontSize: 11.5,
-    color: THEME.colors.textDark,
-    fontWeight: '500',
-  },
-  archivePillTextActive: {
-    color: THEME.colors.primary,
-    fontWeight: '700',
   },
   switchRow: {
     flexDirection: 'row',
@@ -590,11 +808,9 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 13.5,
     fontWeight: '600',
-    color: THEME.colors.textDark,
   },
   switchSub: {
     fontSize: 11.5,
-    color: THEME.colors.textMuted,
     marginTop: 2,
   },
   buttonRow: {
@@ -607,9 +823,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: THEME.colors.primary,
     paddingVertical: 11,
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
   },
   buttonPrimaryText: {
     color: '#FFFFFF',
@@ -622,26 +837,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     paddingVertical: 10,
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
   },
   buttonSecondaryText: {
-    color: THEME.colors.textDark,
     fontSize: 13,
     fontWeight: '600',
   },
   jsonBox: {
-    backgroundColor: '#FAF8F5',
     borderWidth: 1,
-    borderColor: THEME.colors.linedPaper,
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
     padding: 10,
     fontSize: 12,
     fontFamily: 'monospace',
-    color: THEME.colors.textDark,
     minHeight: 70,
     textAlignVertical: 'top',
   },
@@ -650,9 +859,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: THEME.colors.danger,
+    backgroundColor: '#DC2626',
     paddingVertical: 10,
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
   },
   dangerButtonText: {
     color: '#FFFFFF',

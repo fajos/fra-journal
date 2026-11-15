@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralFlower } from './FloralHeader';
 
 interface QuoteFooterProps {
@@ -9,12 +9,30 @@ interface QuoteFooterProps {
 }
 
 export const QuoteFooter: React.FC<QuoteFooterProps> = ({ quote, author }) => {
+  const { theme } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          borderTopColor: theme.colors.cardBorder,
+          backgroundColor: theme.isDark ? 'rgba(28, 28, 33, 0.4)' : 'rgba(255, 255, 255, 0.4)',
+        },
+      ]}
+    >
       <View style={styles.contentRow}>
         <FloralFlower size={20} opacity={0.6} />
-        <Text style={styles.quoteText}>
-          "{quote}" <Text style={styles.authorText}>— {author}</Text>
+        <Text
+          style={[
+            styles.quoteText,
+            {
+              color: theme.colors.textMuted,
+              fontFamily: theme.typography.fontFamilySerif,
+            },
+          ]}
+        >
+          "{quote}" <Text style={[styles.authorText, { color: theme.colors.textDark }]}>— {author}</Text>
         </Text>
       </View>
     </View>
@@ -27,8 +45,6 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.cardBorder,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   contentRow: {
     flexDirection: 'row',
@@ -39,15 +55,12 @@ const styles = StyleSheet.create({
   quoteText: {
     flex: 1,
     fontSize: 12.5,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontStyle: 'italic',
-    color: THEME.colors.textMuted,
     lineHeight: 18,
     textAlign: 'center',
   },
   authorText: {
     fontStyle: 'normal',
     fontWeight: '600',
-    color: THEME.colors.textDark,
   },
 });
