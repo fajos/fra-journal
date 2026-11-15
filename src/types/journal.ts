@@ -59,47 +59,16 @@ export const LIFE_AREAS: { key: LifeArea; label: string; icon: string; defaultPl
   },
 ];
 
-export interface GoalEntry {
-  area: LifeArea;
-  text: string;
-  priority: 1 | 2 | 3;
-  isTopThree: boolean;
-  whyItMatters: string;
-  milestones: {
-    q1: string;
-    q2: string;
-    q3: string;
-    q4: string;
-  };
-  supportNeeded: string;
-}
-
 export interface CheckItem {
   id: string;
   text: string;
   completed: boolean;
 }
 
-export interface QuarterPlan {
-  quarter: 1 | 2 | 3 | 4;
-  theme: string;
-  month1: CheckItem[];
-  month2: CheckItem[];
-  month3: CheckItem[];
-}
-
-export interface MonthPlan {
-  monthIndex: number; // 1 to 12
-  monthName: string;
-  keyGoals: CheckItem[]; // up to 5
-  todos: CheckItem[];    // up to 6
-  notes: string;
-}
-
 export interface WeekPlan {
-  id: string; // e.g. "2026-W01" or date string
-  weekOf: string;
-  topPriorities: CheckItem[]; // top 3
+  weekIndex: number; // 1 to 5 (e.g. Week 1, Week 2...)
+  weekOf: string;    // editable date label (e.g. "Jan 1 - Jan 7")
+  topPriorities: CheckItem[]; // Top 3 priorities for this week
   days: {
     monday: string;
     tuesday: string;
@@ -113,7 +82,6 @@ export interface WeekPlan {
 }
 
 export interface MonthReview {
-  monthIndex: number;
   whatIAchieved: string;
   whatWasLeftUndone: string;
   whatGotInTheWay: string;
@@ -125,11 +93,43 @@ export interface MonthReview {
   };
 }
 
+export interface MonthPlan {
+  monthIndex: number; // 1 to 12
+  monthName: string;
+  keyGoals: CheckItem[]; // up to 5
+  todos: CheckItem[];    // up to 6
+  notes: string;
+  review: MonthReview;
+  weeks: Record<number, WeekPlan>; // Weeks 1 to 5 for this month
+}
+
+export interface QuarterPlan {
+  quarter: 1 | 2 | 3 | 4;
+  theme: string;
+  month1: CheckItem[];
+  month2: CheckItem[];
+  month3: CheckItem[];
+}
+
+export interface GoalEntry {
+  area: LifeArea;
+  text: string;
+  priority: 1 | 2 | 3;
+  isTopThree: boolean;
+  whyItMatters: string;
+  milestones: {
+    q1: string;
+    q2: string;
+    q3: string;
+    q4: string;
+  };
+  supportNeeded: string;
+  // Nested goal-specific plans
+  quarterPlans: Record<1 | 2 | 3 | 4, QuarterPlan>;
+  monthPlans: Record<number, MonthPlan>; // 1 to 12
+}
+
 export interface JournalState {
   year: number;
   goals: Record<LifeArea, GoalEntry>;
-  quarterPlans: Record<number, QuarterPlan>;
-  monthPlans: Record<number, MonthPlan>;
-  weekPlans: Record<string, WeekPlan>;
-  monthReviews: Record<number, MonthReview>;
 }

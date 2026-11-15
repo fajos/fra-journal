@@ -6,96 +6,85 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  useWindowDimensions,
 } from 'react-native';
-import { JournalState, MonthPlan } from '../types/journal';
+import { JournalState, LifeArea, MonthPlan } from '../types/journal';
 import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
+import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { MONTH_NAMES } from '../storage/journalStorage';
-import { CheckSquare, ListTodo, FileText, ArrowRight } from 'lucide-react-native';
+import { MONTH_NAMES, updateGoalMonth } from '../storage/journalStorage';
+import { CheckSquare, ListTodo, FileText, ArrowRight, Clock, RotateCcw } from 'lucide-react-native';
 
 interface MonthPlanScreenProps {
   state: JournalState;
   onUpdateState: (newState: JournalState) => void;
+  selectedArea: LifeArea;
+  onSelectArea: (area: LifeArea) => void;
   selectedMonth: number; // 1 - 12
   onSelectMonth: (m: number) => void;
-  onNavigateToWeek?: () => void;
-  onNavigateToReview?: () => void;
+  onNavigateToWeek: (area: LifeArea, month: number, week: number) => void;
+  onNavigateToReview: (area: LifeArea, month: number) => void;
 }
 
 export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
   state,
   onUpdateState,
+  selectedArea,
+  onSelectArea,
   selectedMonth,
   onSelectMonth,
   onNavigateToWeek,
   onNavigateToReview,
 }) => {
-  const currentPlan: MonthPlan = state.monthPlans[selectedMonth] || {
-    monthIndex: selectedMonth,
-    monthName: MONTH_NAMES[selectedMonth - 1],
-    keyGoals: [
-      { id: '1', text: '', completed: false },
-      { id: '2', text: '', completed: false },
-      { id: '3', text: '', completed: false },
-      { id: '4', text: '', completed: false },
-      { id: '5', text: '', completed: false },
-    ],
-    todos: [
-      { id: '1', text: '', completed: false },
-      { id: '2', text: '', completed: false },
-      { id: '3', text: '', completed: false },
-      { id: '4', text: '', completed: false },
-      { id: '5', text: '', completed: false },
-      { id: '6', text: '', completed: false },
-    ],
-    notes: '',
-  };
+  const currentGoal = state.goals[selectedArea];
+  if (!currentGoal) return null;
 
-  const updateMonthPlan = (updates: Partial<MonthPlan>) => {
-    const updated = {
-      ...state.monthPlans,
-      [selectedMonth]: {
-        ...currentPlan,
-        ...updates,
-      },
-    };
-    onUpdateState({ ...state, monthPlans: updated });
-  };
+  const currentPlan: MonthPlan = currentGoal.monthPlans[selectedMonth];
+  if (!currentPlan) return null;
 
   const handleToggleKeyGoal = (index: number) => {
     const goals = [...currentPlan.keyGoals];
     goals[index] = { ...goals[index], completed: !goals[index].completed };
-    updateMonthPlan({ keyGoals: goals });
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { keyGoals: goals }));
   };
 
   const handleChangeKeyGoalText = (index: number, text: string) => {
     const goals = [...currentPlan.keyGoals];
     goals[index] = { ...goals[index], text };
-    updateMonthPlan({ keyGoals: goals });
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { keyGoals: goals }));
   };
 
   const handleToggleTodo = (index: number) => {
     const todos = [...currentPlan.todos];
     todos[index] = { ...todos[index], completed: !todos[index].completed };
-    updateMonthPlan({ todos });
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { todos }));
   };
 
   const handleChangeTodoText = (index: number, text: string) => {
     const todos = [...currentPlan.todos];
     todos[index] = { ...todos[index], text };
-    updateMonthPlan({ todos });
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { todos }));
+  };
+
+  const handleNotesChange = (notes: string) => {
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { notes }));
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FloralHeader
         title={`Month ${MONTH_NAMES[selectedMonth - 1]}`}
-        subtitle="Align your monthly priorities, to-dos, and thoughts"
+        subtitle={`Goal: ${selectedArea}`}
         year={state.year}
+      />
+
+      <GoalScopeHeader
+        selectedArea={selectedArea}
+        onSelectArea={onSelectArea}
+        goalText={currentGoal.text}
+        monthName={MONTH_NAMES[selectedMonth - 1]}
       />
 
       {/* Month Picker Horizontal Strip */}
@@ -121,20 +110,39 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
         })}
       </ScrollView>
 
-      {/* Quick Action Navigation bar */}
-      <View style={styles.quickActions}>
-        {onNavigateToWeek && (
-          <Pressable onPress={onNavigateToWeek} style={styles.actionPill}>
-            <Text style={styles.actionPillText}>Open Weekly Planner</Text>
-            <ArrowRight size={13} color={THEME.colors.primary} />
-          </Pressable>
-        )}
-        {onNavigateToReview && (
-          <Pressable onPress={onNavigateToReview} style={styles.actionPill}>
-            <Text style={styles.actionPillText}>Month in Review</Text>
-            <ArrowRight size={13} color={THEME.colors.primary} />
-          </Pressable>
-        )}
+      {/* Weeks of this month selector bar */}
+      <View style={styles.weeksBox}>
+        <View style={styles.weeksHeader}>
+          <Clock size={15} color={THEME.colors.primary} />
+          <Text style={styles.weeksTitle}>Weekly Planners for {MONTH_NAMES[selectedMonth - 1]}</Text>
+        </View>
+        <View style={styles.weekButtonsRow}>
+          {([1, 2, 3, 4, 5] as const).map((wNum) => (
+            <Pressable
+              key={wNum}
+              onPress={() => onNavigateToWeek(selectedArea, selectedMonth, wNum)}
+              style={styles.weekBtn}
+              hitSlop={4}
+            >
+              <Text style={styles.weekBtnLabel}>Week {wNum}</Text>
+              <ArrowRight size={11} color={THEME.colors.primary} />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Quick Jump to Month in Review */}
+      <View style={styles.reviewBanner}>
+        <Pressable
+          onPress={() => onNavigateToReview(selectedArea, selectedMonth)}
+          style={styles.reviewBtn}
+        >
+          <RotateCcw size={15} color={THEME.colors.primary} />
+          <Text style={styles.reviewBtnText}>
+            Open Month in Review for {MONTH_NAMES[selectedMonth - 1]}
+          </Text>
+          <ArrowRight size={14} color={THEME.colors.primary} />
+        </Pressable>
       </View>
 
       <View style={styles.innerContent}>
@@ -150,7 +158,7 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
                 key={item.id || idx}
                 text={item.text}
                 completed={item.completed}
-                placeholder={`Goal #${idx + 1}...`}
+                placeholder={`Goal #${idx + 1} for ${MONTH_NAMES[selectedMonth - 1]}...`}
                 onToggle={() => handleToggleKeyGoal(idx)}
                 onChangeText={(t) => handleChangeKeyGoalText(idx, t)}
               />
@@ -186,8 +194,8 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
           </View>
           <TextInput
             value={currentPlan.notes}
-            onChangeText={(t) => updateMonthPlan({ notes: t })}
-            placeholder="Jot down observations, insights, inspirations, or journal entries for the month..."
+            onChangeText={handleNotesChange}
+            placeholder={`Jot down thoughts, milestones, or observations for ${MONTH_NAMES[selectedMonth - 1]} (${selectedArea})...`}
             placeholderTextColor={THEME.colors.textLight}
             multiline
             numberOfLines={4}
@@ -237,26 +245,66 @@ const styles = StyleSheet.create({
   monthChipTextActive: {
     color: '#FFFFFF',
   },
-  quickActions: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 12,
+  weeksBox: {
+    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: THEME.radius.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+    padding: 12,
+    marginBottom: 10,
+    ...THEME.shadow,
   },
-  actionPill: {
+  weeksHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  weeksTitle: {
+    fontSize: 13,
+    fontFamily: THEME.typography.fontFamilySerif,
+    fontWeight: '700',
+    color: THEME.colors.textDark,
+  },
+  weekButtonsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  weekBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 3,
+    backgroundColor: THEME.colors.primaryLight,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E8D6DA',
+  },
+  weekBtnLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.colors.primary,
+  },
+  reviewBanner: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  reviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: THEME.radius.sm,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderWidth: 1,
     borderColor: THEME.colors.cardBorder,
   },
-  actionPillText: {
-    fontSize: 12,
+  reviewBtnText: {
+    fontSize: 12.5,
     fontWeight: '600',
     color: THEME.colors.primary,
   },

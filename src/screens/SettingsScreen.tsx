@@ -59,7 +59,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     }
     try {
       const parsed = JSON.parse(jsonInput);
-      if (parsed.goals && parsed.quarterPlans) {
+      if (parsed.goals) {
         onUpdateState(parsed);
         showStatus('Journal state successfully restored!');
       } else {

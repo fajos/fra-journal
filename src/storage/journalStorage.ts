@@ -1,7 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { JournalState, LIFE_AREAS, LifeArea, QuarterPlan, MonthPlan, MonthReview, WeekPlan } from '../types/journal';
+import {
+  JournalState,
+  LIFE_AREAS,
+  LifeArea,
+  QuarterPlan,
+  MonthPlan,
+  MonthReview,
+  WeekPlan,
+  GoalEntry,
+} from '../types/journal';
 
-const STORAGE_KEY = '@ejournal_state_v1';
+const STORAGE_KEY = '@ejournal_state_v2';
 
 export const MONTH_NAMES = [
   'January',
@@ -18,11 +27,173 @@ export const MONTH_NAMES = [
   'December',
 ];
 
+export function createDefaultQuarterPlans(area: LifeArea): Record<1 | 2 | 3 | 4, QuarterPlan> {
+  const isPersonalGrowth = area === 'Personal growth';
+  return {
+    1: {
+      quarter: 1,
+      theme: isPersonalGrowth ? 'Mindset & Daily Habits' : 'Foundation & Setup',
+      month1: [
+        { id: 'q1m1_1', text: isPersonalGrowth ? 'Establish 20-min morning reading' : '', completed: isPersonalGrowth },
+        { id: 'q1m1_2', text: isPersonalGrowth ? 'Select and acquire first 3 books' : '', completed: false },
+        { id: 'q1m1_3', text: '', completed: false },
+      ],
+      month2: [
+        { id: 'q1m2_1', text: isPersonalGrowth ? 'Finish Book #1 and write key takeaways' : '', completed: false },
+        { id: 'q1m2_2', text: '', completed: false },
+        { id: 'q1m2_3', text: '', completed: false },
+      ],
+      month3: [
+        { id: 'q1m3_1', text: isPersonalGrowth ? 'Finish Book #2 and review Q1 reading pace' : '', completed: false },
+        { id: 'q1m3_2', text: '', completed: false },
+        { id: 'q1m3_3', text: '', completed: false },
+      ],
+    },
+    2: {
+      quarter: 2,
+      theme: isPersonalGrowth ? 'Expansion & Application' : 'Momentum & Growth',
+      month1: [
+        { id: 'q2m1_1', text: '', completed: false },
+        { id: 'q2m1_2', text: '', completed: false },
+        { id: 'q2m1_3', text: '', completed: false },
+      ],
+      month2: [
+        { id: 'q2m2_1', text: '', completed: false },
+        { id: 'q2m2_2', text: '', completed: false },
+        { id: 'q2m2_3', text: '', completed: false },
+      ],
+      month3: [
+        { id: 'q2m3_1', text: '', completed: false },
+        { id: 'q2m3_2', text: '', completed: false },
+        { id: 'q2m3_3', text: '', completed: false },
+      ],
+    },
+    3: {
+      quarter: 3,
+      theme: 'Deep Work & Consistency',
+      month1: [
+        { id: 'q3m1_1', text: '', completed: false },
+        { id: 'q3m1_2', text: '', completed: false },
+        { id: 'q3m1_3', text: '', completed: false },
+      ],
+      month2: [
+        { id: 'q3m2_1', text: '', completed: false },
+        { id: 'q3m2_2', text: '', completed: false },
+        { id: 'q3m2_3', text: '', completed: false },
+      ],
+      month3: [
+        { id: 'q3m3_1', text: '', completed: false },
+        { id: 'q3m3_2', text: '', completed: false },
+        { id: 'q3m3_3', text: '', completed: false },
+      ],
+    },
+    4: {
+      quarter: 4,
+      theme: 'Harvest & Annual Review',
+      month1: [
+        { id: 'q4m1_1', text: '', completed: false },
+        { id: 'q4m1_2', text: '', completed: false },
+        { id: 'q4m1_3', text: '', completed: false },
+      ],
+      month2: [
+        { id: 'q4m2_1', text: '', completed: false },
+        { id: 'q4m2_2', text: '', completed: false },
+        { id: 'q4m2_3', text: '', completed: false },
+      ],
+      month3: [
+        { id: 'q4m3_1', text: '', completed: false },
+        { id: 'q4m3_2', text: '', completed: false },
+        { id: 'q4m3_3', text: '', completed: false },
+      ],
+    },
+  };
+}
+
+export function createDefaultWeeks(): Record<number, WeekPlan> {
+  const weeks: Record<number, WeekPlan> = {};
+  for (let w = 1; w <= 5; w++) {
+    weeks[w] = {
+      weekIndex: w,
+      weekOf: `Week ${w}`,
+      topPriorities: [
+        { id: `w${w}_p1`, text: w === 1 ? 'Establish weekly schedule & block morning time' : '', completed: false },
+        { id: `w${w}_p2`, text: w === 1 ? 'Review goal milestones for this month' : '', completed: false },
+        { id: `w${w}_p3`, text: '', completed: false },
+      ],
+      days: {
+        monday: w === 1 ? 'Kickoff weekly focus & plan key milestones' : '',
+        tuesday: '',
+        wednesday: '',
+        thursday: '',
+        friday: '',
+        saturday: '',
+        sunday: w === 1 ? 'Weekly reflection & review upcoming week' : '',
+      },
+      carryForward: '',
+    };
+  }
+  return weeks;
+}
+
+export function createDefaultMonthPlans(area: LifeArea): Record<number, MonthPlan> {
+  const monthPlans: Record<number, MonthPlan> = {};
+  const isPersonalGrowth = area === 'Personal growth';
+
+  for (let m = 1; m <= 12; m++) {
+    monthPlans[m] = {
+      monthIndex: m,
+      monthName: MONTH_NAMES[m - 1],
+      keyGoals: [
+        {
+          id: `m${m}_g1`,
+          text: isPersonalGrowth && m === 1 ? 'Read 25 pages daily without distraction' : '',
+          completed: false,
+        },
+        {
+          id: `m${m}_g2`,
+          text: isPersonalGrowth && m === 1 ? 'Journal 3 key insights at the end of each chapter' : '',
+          completed: false,
+        },
+        { id: `m${m}_g3`, text: '', completed: false },
+        { id: `m${m}_g4`, text: '', completed: false },
+        { id: `m${m}_g5`, text: '', completed: false },
+      ],
+      todos: [
+        {
+          id: `m${m}_t1`,
+          text: isPersonalGrowth && m === 1 ? 'Set up quiet reading corner in study' : '',
+          completed: true,
+        },
+        { id: `m${m}_t2`, text: '', completed: false },
+        { id: `m${m}_t3`, text: '', completed: false },
+        { id: `m${m}_t4`, text: '', completed: false },
+        { id: `m${m}_t5`, text: '', completed: false },
+        { id: `m${m}_t6`, text: '', completed: false },
+      ],
+      notes: isPersonalGrowth && m === 1 ? 'Remember: Consistency in small daily habits compounds into remarkable transformation.' : '',
+      review: {
+        whatIAchieved: isPersonalGrowth && m === 1 ? 'Completed 1 full book and kept up consistent morning reading habits for 3 straight weeks.' : '',
+        whatWasLeftUndone: '',
+        whatGotInTheWay: '',
+        carryForwardItems: [
+          { id: `m${m}_cf1`, text: 'Carry forward remaining chapters of Book #2', completed: false },
+        ],
+        reflection: {
+          oneWin: isPersonalGrowth && m === 1 ? 'Protecting 7:00 AM reading window every morning' : '',
+          oneLesson: isPersonalGrowth && m === 1 ? 'Phone out of sight prevents attention fractures' : '',
+          gratefulFor: isPersonalGrowth && m === 1 ? 'Quiet mornings and inspiring authors' : '',
+        },
+      },
+      weeks: createDefaultWeeks(),
+    };
+  }
+  return monthPlans;
+}
+
 export function createInitialJournalState(year: number = new Date().getFullYear()): JournalState {
-  const goals = {} as Record<LifeArea, any>;
+  const goals = {} as Record<LifeArea, GoalEntry>;
 
   LIFE_AREAS.forEach((item, index) => {
-    // Provide gentle sample seeds for top 3 areas to inspire the user immediately
     const isSampleTop = index < 3;
     goals[item.key] = {
       area: item.key,
@@ -30,8 +201,8 @@ export function createInitialJournalState(year: number = new Date().getFullYear(
         ? index === 0
           ? 'Read 12 transformative books and write monthly summaries'
           : index === 1
-          ? 'Establish a daily 30-minute morning workout and drink 2.5L water'
-          : 'Dedicate 15 minutes each morning to quiet meditation and prayer'
+          ? 'Establish a daily 30-minute workout and prioritize 7.5 hours of sleep'
+          : 'Dedicate 15 minutes each morning to quiet prayer and meditation'
         : '',
       priority: (isSampleTop ? index + 1 : 1) as 1 | 2 | 3,
       isTopThree: isSampleTop,
@@ -43,164 +214,20 @@ export function createInitialJournalState(year: number = new Date().getFullYear(
           : 'To maintain inner peace and emotional grounding amidst busy seasons.'
         : '',
       milestones: {
-        q1: isSampleTop ? 'Finish first 3 books and build habit' : '',
+        q1: isSampleTop ? 'Finish first 3 books and establish consistent routine' : '',
         q2: isSampleTop ? 'Read books 4-6; do mid-year checkin' : '',
-        q3: isSampleTop ? 'Read books 7-9; join local book circle' : '',
-        q4: isSampleTop ? 'Read books 10-12; compile top takeaways' : '',
+        q3: isSampleTop ? 'Read books 7-9; join local book discussion circle' : '',
+        q4: isSampleTop ? 'Read books 10-12; compile top takeaways into personal playbook' : '',
       },
       supportNeeded: isSampleTop ? 'Accountability partner, quiet reading nook at home, library card' : '',
+      quarterPlans: createDefaultQuarterPlans(item.key),
+      monthPlans: createDefaultMonthPlans(item.key),
     };
   });
-
-  const quarterPlans: Record<number, QuarterPlan> = {
-    1: {
-      quarter: 1,
-      theme: 'Foundation & Consistency',
-      month1: [
-        { id: 'q1m1_1', text: 'Set up morning routine & reading schedule', completed: true },
-        { id: 'q1m1_2', text: 'Health checkup and baseline workout plan', completed: false },
-        { id: 'q1m1_3', text: 'Audit yearly budget and set savings bucket', completed: false },
-      ],
-      month2: [
-        { id: 'q1m2_1', text: 'Consistent 5-day workout rhythm', completed: false },
-        { id: 'q1m2_2', text: 'Finish reading Book #2', completed: false },
-        { id: 'q1m2_3', text: 'Host intimate dinner with close friends', completed: false },
-      ],
-      month3: [
-        { id: 'q1m3_1', text: 'First quarter review & milestone assessment', completed: false },
-        { id: 'q1m3_2', text: 'Plan Q2 trip / family weekend getaway', completed: false },
-        { id: 'q1m3_3', text: 'Celebrate small wins and adjust goals', completed: false },
-      ],
-    },
-    2: {
-      quarter: 2,
-      theme: 'Momentum & Expansion',
-      month1: [
-        { id: 'q2m1_1', text: 'Kick off Q2 creative project', completed: false },
-        { id: 'q2m1_2', text: 'Outdoor hiking weekends', completed: false },
-        { id: 'q2m1_3', text: 'Financial checkup & investment review', completed: false },
-      ],
-      month2: [
-        { id: 'q2m2_1', text: 'Community service / volunteering day', completed: false },
-        { id: 'q2m2_2', text: 'Mid-quarter skill enhancement course', completed: false },
-        { id: 'q2m2_3', text: 'Deep rest weekend unplugged from devices', completed: false },
-      ],
-      month3: [
-        { id: 'q2m3_1', text: 'Mid-year milestone audit', completed: false },
-        { id: 'q2m3_2', text: 'Reflect on habits that stick vs need shift', completed: false },
-        { id: 'q2m3_3', text: 'Realign priorities for second half of year', completed: false },
-      ],
-    },
-    3: {
-      quarter: 3,
-      theme: 'Depth & Mastery',
-      month1: [
-        { id: 'q3m1_1', text: 'Focus on rest, joy and nature immersion', completed: false },
-        { id: 'q3m1_2', text: 'Family summer tradition', completed: false },
-        { id: 'q3m1_3', text: 'Re-evaluate personal growth goals', completed: false },
-      ],
-      month2: [
-        { id: 'q3m2_1', text: 'Resume intense deep-work blocks', completed: false },
-        { id: 'q3m2_2', text: 'Books 7 & 8', completed: false },
-        { id: 'q3m2_3', text: 'Strength & endurance milestone', completed: false },
-      ],
-      month3: [
-        { id: 'q3m3_1', text: 'Review Q3 goals and prepare for year-end push', completed: false },
-        { id: 'q3m3_2', text: 'Spiritual retreat or reflective weekend', completed: false },
-        { id: 'q3m3_3', text: 'Review annual financial trajectory', completed: false },
-      ],
-    },
-    4: {
-      quarter: 4,
-      theme: 'Harvest & Celebration',
-      month1: [
-        { id: 'q4m1_1', text: 'Final sprint on career & business targets', completed: false },
-        { id: 'q4m1_2', text: 'Books 9 & 10', completed: false },
-        { id: 'q4m1_3', text: 'Host gratitude gathering', completed: false },
-      ],
-      month2: [
-        { id: 'q4m2_1', text: 'Reach annual savings and investment target', completed: false },
-        { id: 'q4m2_2', text: 'Books 11 & 12', completed: false },
-        { id: 'q4m2_3', text: 'Begin drafting reflections for the year', completed: false },
-      ],
-      month3: [
-        { id: 'q4m3_1', text: 'Comprehensive annual review & celebration', completed: false },
-        { id: 'q4m3_2', text: 'Family holiday memories & downtime', completed: false },
-        { id: 'q4m3_3', text: 'Draft vision board for next year', completed: false },
-      ],
-    },
-  };
-
-  const monthPlans: Record<number, MonthPlan> = {};
-  const monthReviews: Record<number, MonthReview> = {};
-
-  for (let m = 1; m <= 12; m++) {
-    monthPlans[m] = {
-      monthIndex: m,
-      monthName: MONTH_NAMES[m - 1],
-      keyGoals: [
-        { id: `m${m}_g1`, text: m === 1 ? 'Establish consistent 6:30 AM rising time' : '', completed: false },
-        { id: `m${m}_g2`, text: m === 1 ? 'Finish Atomic Habits reading & note key actions' : '', completed: false },
-        { id: `m${m}_g3`, text: m === 1 ? 'Cook dinner at home 5 nights a week' : '', completed: false },
-        { id: `m${m}_g4`, text: '', completed: false },
-        { id: `m${m}_g5`, text: '', completed: false },
-      ],
-      todos: [
-        { id: `m${m}_t1`, text: m === 1 ? 'Order new journal and stationery' : '', completed: true },
-        { id: `m${m}_t2`, text: m === 1 ? 'Schedule annual dentist and physical appointments' : '', completed: false },
-        { id: `m${m}_t3`, text: m === 1 ? 'Organize home workspace desk' : '', completed: false },
-        { id: `m${m}_t4`, text: '', completed: false },
-        { id: `m${m}_t5`, text: '', completed: false },
-        { id: `m${m}_t6`, text: '', completed: false },
-      ],
-      notes: m === 1 ? 'Remember: Focus on systems and consistency rather than overnight outcomes.' : '',
-    };
-
-    monthReviews[m] = {
-      monthIndex: m,
-      whatIAchieved: m === 1 ? 'Built solid momentum in the first 2 weeks. Read 1 full book.' : '',
-      whatWasLeftUndone: '',
-      whatGotInTheWay: '',
-      carryForwardItems: [
-        { id: `m${m}_cf1`, text: 'Carry forward remaining financial audit tasks', completed: false },
-      ],
-      reflection: {
-        oneWin: m === 1 ? 'Waking up consistently refreshed and present' : '',
-        oneLesson: m === 1 ? 'Protect morning hours before checking emails' : '',
-        gratefulFor: m === 1 ? 'Good health, supportive family, and quiet morning coffee' : '',
-      },
-    };
-  }
-
-  const weekPlans: Record<string, WeekPlan> = {
-    current: {
-      id: 'current',
-      weekOf: 'January 5 - January 11',
-      topPriorities: [
-        { id: 'w_p1', text: 'Complete Q1 milestone breakdown', completed: true },
-        { id: 'w_p2', text: 'Plan meal prep for the week ahead', completed: false },
-        { id: 'w_p3', text: 'Dedicate 1 hour to Sunday planning and reflection', completed: false },
-      ],
-      days: {
-        monday: 'Review weekly agenda • 30 min morning workout',
-        tuesday: 'Deep work block on project specs • Read 20 pages',
-        wednesday: 'Mid-week check-in • Healthy dinner at home',
-        thursday: 'Team sync • Evening walk in the fresh air',
-        friday: 'Weekly wrap up • Clear inbox to zero',
-        saturday: 'Family outing & farmers market',
-        sunday: 'Quiet morning • Weekly reflection & meal plan',
-      },
-      carryForward: 'Call electrician for lighting checkup • Buy birthday gift',
-    },
-  };
 
   return {
     year,
     goals,
-    quarterPlans,
-    monthPlans,
-    weekPlans,
-    monthReviews,
   };
 }
 
@@ -209,17 +236,32 @@ export async function loadJournalState(): Promise<JournalState> {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Ensure any newly added fields exist
-      const initial = createInitialJournalState(parsed.year || new Date().getFullYear());
-      return {
-        ...initial,
-        ...parsed,
-        goals: { ...initial.goals, ...parsed.goals },
-        quarterPlans: { ...initial.quarterPlans, ...parsed.quarterPlans },
-        monthPlans: { ...initial.monthPlans, ...parsed.monthPlans },
-        weekPlans: { ...initial.weekPlans, ...parsed.weekPlans },
-        monthReviews: { ...initial.monthReviews, ...parsed.monthReviews },
-      };
+      if (parsed.goals) {
+        const initial = createInitialJournalState(parsed.year || new Date().getFullYear());
+        const mergedGoals = { ...initial.goals };
+
+        LIFE_AREAS.forEach(({ key }) => {
+          if (parsed.goals[key]) {
+            mergedGoals[key] = {
+              ...initial.goals[key],
+              ...parsed.goals[key],
+              quarterPlans: {
+                ...initial.goals[key].quarterPlans,
+                ...(parsed.goals[key].quarterPlans || {}),
+              },
+              monthPlans: {
+                ...initial.goals[key].monthPlans,
+                ...(parsed.goals[key].monthPlans || {}),
+              },
+            };
+          }
+        });
+
+        return {
+          year: parsed.year || initial.year,
+          goals: mergedGoals,
+        };
+      }
     }
   } catch (err) {
     console.warn('Failed to load journal state from storage:', err);
@@ -241,4 +283,144 @@ export async function resetJournalState(): Promise<JournalState> {
   const fresh = createInitialJournalState();
   await saveJournalState(fresh);
   return fresh;
+}
+
+// ----------------- Strongly-Typed Updaters -----------------
+
+export function updateGoal(
+  state: JournalState,
+  area: LifeArea,
+  updates: Partial<Omit<GoalEntry, 'quarterPlans' | 'monthPlans'>>
+): JournalState {
+  const goal = state.goals[area];
+  if (!goal) return state;
+  return {
+    ...state,
+    goals: {
+      ...state.goals,
+      [area]: {
+        ...goal,
+        ...updates,
+      },
+    },
+  };
+}
+
+export function updateGoalQuarter(
+  state: JournalState,
+  area: LifeArea,
+  quarter: 1 | 2 | 3 | 4,
+  updates: Partial<QuarterPlan>
+): JournalState {
+  const goal = state.goals[area];
+  if (!goal) return state;
+  const qPlan = goal.quarterPlans[quarter];
+  return {
+    ...state,
+    goals: {
+      ...state.goals,
+      [area]: {
+        ...goal,
+        quarterPlans: {
+          ...goal.quarterPlans,
+          [quarter]: {
+            ...qPlan,
+            ...updates,
+          },
+        },
+      },
+    },
+  };
+}
+
+export function updateGoalMonth(
+  state: JournalState,
+  area: LifeArea,
+  monthIndex: number,
+  updates: Partial<Omit<MonthPlan, 'review' | 'weeks'>>
+): JournalState {
+  const goal = state.goals[area];
+  if (!goal) return state;
+  const mPlan = goal.monthPlans[monthIndex];
+  return {
+    ...state,
+    goals: {
+      ...state.goals,
+      [area]: {
+        ...goal,
+        monthPlans: {
+          ...goal.monthPlans,
+          [monthIndex]: {
+            ...mPlan,
+            ...updates,
+          },
+        },
+      },
+    },
+  };
+}
+
+export function updateGoalMonthReview(
+  state: JournalState,
+  area: LifeArea,
+  monthIndex: number,
+  updates: Partial<MonthReview>
+): JournalState {
+  const goal = state.goals[area];
+  if (!goal) return state;
+  const mPlan = goal.monthPlans[monthIndex];
+  return {
+    ...state,
+    goals: {
+      ...state.goals,
+      [area]: {
+        ...goal,
+        monthPlans: {
+          ...goal.monthPlans,
+          [monthIndex]: {
+            ...mPlan,
+            review: {
+              ...mPlan.review,
+              ...updates,
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+export function updateGoalWeek(
+  state: JournalState,
+  area: LifeArea,
+  monthIndex: number,
+  weekIndex: number,
+  updates: Partial<WeekPlan>
+): JournalState {
+  const goal = state.goals[area];
+  if (!goal) return state;
+  const mPlan = goal.monthPlans[monthIndex];
+  const wPlan = mPlan.weeks[weekIndex];
+  return {
+    ...state,
+    goals: {
+      ...state.goals,
+      [area]: {
+        ...goal,
+        monthPlans: {
+          ...goal.monthPlans,
+          [monthIndex]: {
+            ...mPlan,
+            weeks: {
+              ...mPlan.weeks,
+              [weekIndex]: {
+                ...wPlan,
+                ...updates,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,26 +7,46 @@ import {
   TextInput,
   Pressable,
 } from 'react-native';
-import { JournalState, WeekPlan } from '../types/journal';
+import { JournalState, LifeArea, WeekPlan } from '../types/journal';
 import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
+import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { Star, CalendarDays, ArrowRightLeft, Edit3 } from 'lucide-react-native';
+import { MONTH_NAMES, updateGoalWeek } from '../storage/journalStorage';
+import { Star, CalendarDays, ArrowRightLeft } from 'lucide-react-native';
 
 interface WeekPlanScreenProps {
   state: JournalState;
   onUpdateState: (newState: JournalState) => void;
+  selectedArea: LifeArea;
+  onSelectArea: (area: LifeArea) => void;
+  selectedMonth: number;
+  onSelectMonth: (m: number) => void;
+  selectedWeek: number; // 1 to 5
+  onSelectWeek: (w: number) => void;
 }
 
 export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
   state,
   onUpdateState,
+  selectedArea,
+  onSelectArea,
+  selectedMonth,
+  onSelectMonth,
+  selectedWeek,
+  onSelectWeek,
 }) => {
-  const currentWeek: WeekPlan = state.weekPlans.current || {
-    id: 'current',
-    weekOf: 'January 5 - January 11',
+  const currentGoal = state.goals[selectedArea];
+  if (!currentGoal) return null;
+
+  const currentMonthPlan = currentGoal.monthPlans[selectedMonth];
+  if (!currentMonthPlan) return null;
+
+  const currentWeekPlan: WeekPlan = currentMonthPlan.weeks[selectedWeek] || {
+    weekIndex: selectedWeek,
+    weekOf: `Week ${selectedWeek}`,
     topPriorities: [
       { id: '1', text: '', completed: false },
       { id: '2', text: '', completed: false },
@@ -44,39 +64,35 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
     carryForward: '',
   };
 
-  const updateWeek = (updates: Partial<WeekPlan>) => {
-    const updated = {
-      ...state.weekPlans,
-      current: {
-        ...currentWeek,
-        ...updates,
-      },
-    };
-    onUpdateState({ ...state, weekPlans: updated });
+  const handleUpdateWeekOf = (weekOf: string) => {
+    onUpdateState(updateGoalWeek(state, selectedArea, selectedMonth, selectedWeek, { weekOf }));
   };
 
   const handleTogglePriority = (index: number) => {
-    const items = [...currentWeek.topPriorities];
+    const items = [...currentWeekPlan.topPriorities];
     items[index] = { ...items[index], completed: !items[index].completed };
-    updateWeek({ topPriorities: items });
+    onUpdateState(updateGoalWeek(state, selectedArea, selectedMonth, selectedWeek, { topPriorities: items }));
   };
 
   const handleChangePriorityText = (index: number, text: string) => {
-    const items = [...currentWeek.topPriorities];
+    const items = [...currentWeekPlan.topPriorities];
     items[index] = { ...items[index], text };
-    updateWeek({ topPriorities: items });
+    onUpdateState(updateGoalWeek(state, selectedArea, selectedMonth, selectedWeek, { topPriorities: items }));
   };
 
-  const handleDayChange = (dayKey: keyof typeof currentWeek.days, text: string) => {
-    updateWeek({
-      days: {
-        ...currentWeek.days,
-        [dayKey]: text,
-      },
-    });
+  const handleDayChange = (dayKey: keyof typeof currentWeekPlan.days, text: string) => {
+    const days = {
+      ...currentWeekPlan.days,
+      [dayKey]: text,
+    };
+    onUpdateState(updateGoalWeek(state, selectedArea, selectedMonth, selectedWeek, { days }));
   };
 
-  const daysList: { key: keyof typeof currentWeek.days; label: string }[] = [
+  const handleCarryForwardChange = (carryForward: string) => {
+    onUpdateState(updateGoalWeek(state, selectedArea, selectedMonth, selectedWeek, { carryForward }));
+  };
+
+  const daysList: { key: keyof typeof currentWeekPlan.days; label: string }[] = [
     { key: 'monday', label: 'Monday' },
     { key: 'tuesday', label: 'Tuesday' },
     { key: 'wednesday', label: 'Wednesday' },
@@ -89,19 +105,68 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FloralHeader
-        title="Weekly planner"
-        subtitle={`Week of: ${currentWeek.weekOf}`}
+        title={`Week ${selectedWeek} • ${MONTH_NAMES[selectedMonth - 1]}`}
+        subtitle={`Goal: ${selectedArea}`}
         year={state.year}
       />
+
+      <GoalScopeHeader
+        selectedArea={selectedArea}
+        onSelectArea={onSelectArea}
+        goalText={currentGoal.text}
+        monthName={MONTH_NAMES[selectedMonth - 1]}
+        weekIndex={selectedWeek}
+      />
+
+      {/* Month Selector Strip */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.selectorStrip}
+      >
+        {MONTH_NAMES.map((name, i) => {
+          const mIndex = i + 1;
+          const isActive = mIndex === selectedMonth;
+          return (
+            <Pressable
+              key={name}
+              onPress={() => onSelectMonth(mIndex)}
+              style={[styles.chip, isActive && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                {name}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Week 1..5 Tabs */}
+      <View style={styles.weekTabRow}>
+        {([1, 2, 3, 4, 5] as const).map((wNum) => {
+          const isAct = wNum === selectedWeek;
+          return (
+            <Pressable
+              key={wNum}
+              onPress={() => onSelectWeek(wNum)}
+              style={[styles.weekTab, isAct && styles.weekTabActive]}
+            >
+              <Text style={[styles.weekTabText, isAct && styles.weekTabTextActive]}>
+                Week {wNum}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <View style={styles.innerContent}>
         {/* Editable Week Of Header Input */}
         <View style={styles.weekOfBar}>
           <Text style={styles.weekOfLabel}>Week of:</Text>
           <TextInput
-            value={currentWeek.weekOf}
-            onChangeText={(t) => updateWeek({ weekOf: t })}
-            placeholder="e.g. Oct 12 - Oct 18"
+            value={currentWeekPlan.weekOf}
+            onChangeText={handleUpdateWeekOf}
+            placeholder="e.g. Jan 1 - Jan 7"
             placeholderTextColor={THEME.colors.textLight}
             style={styles.weekOfInput}
           />
@@ -114,7 +179,7 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
             <Text style={styles.cardTitle}>My top 3 priorities this week</Text>
           </View>
           <View style={styles.list}>
-            {currentWeek.topPriorities.map((item, idx) => (
+            {currentWeekPlan.topPriorities.map((item, idx) => (
               <CheckboxItem
                 key={item.id || idx}
                 text={item.text}
@@ -138,9 +203,9 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
               <View key={key} style={styles.dayRow}>
                 <Text style={styles.dayLabel}>{label}</Text>
                 <TextInput
-                  value={currentWeek.days[key]}
+                  value={currentWeekPlan.days[key]}
                   onChangeText={(t) => handleDayChange(key, t)}
-                  placeholder={`Plan or highlights for ${label}...`}
+                  placeholder={`Daily actions or notes for ${label}...`}
                   placeholderTextColor={THEME.colors.textLight}
                   style={styles.dayInput}
                   multiline={false}
@@ -157,9 +222,9 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
             <Text style={styles.cardTitle}>Carry forward</Text>
           </View>
           <TextInput
-            value={currentWeek.carryForward}
-            onChangeText={(t) => updateWeek({ carryForward: t })}
-            placeholder="Tasks, thoughts, or intentions to carry into next week..."
+            value={currentWeekPlan.carryForward}
+            onChangeText={handleCarryForwardChange}
+            placeholder="Tasks or thoughts to carry into the next week..."
             placeholderTextColor={THEME.colors.textLight}
             multiline
             numberOfLines={3}
@@ -183,6 +248,58 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+  },
+  selectorStrip: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  chipActive: {
+    backgroundColor: THEME.colors.primary,
+    borderColor: THEME.colors.primary,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.colors.textDark,
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
+  },
+  weekTabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 6,
+    marginBottom: 12,
+  },
+  weekTab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: THEME.radius.sm,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  weekTabActive: {
+    backgroundColor: THEME.colors.secondary,
+    borderColor: THEME.colors.secondary,
+  },
+  weekTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.colors.textDark,
+  },
+  weekTabTextActive: {
+    color: '#FFFFFF',
   },
   innerContent: {
     paddingHorizontal: 16,

@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Text,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { JournalState, LifeArea } from './src/types/journal';
@@ -32,10 +31,11 @@ export default function App() {
   const [state, setState] = useState<JournalState>(createInitialJournalState());
   const [currentTab, setCurrentTab] = useState<TabKey>('goals');
 
-  // Sub-selection state
+  // Unified Scope Hierarchy: Goal Area -> Quarter -> Month -> Week
   const [selectedArea, setSelectedArea] = useState<LifeArea>('Personal growth');
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(1);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedWeek, setSelectedWeek] = useState<number>(1);
 
   const saveTimeoutRef = useRef<any>(null);
   const { width } = useWindowDimensions();
@@ -76,9 +76,25 @@ export default function App() {
           <YearGoalsScreen
             state={state}
             onUpdateState={handleUpdateState}
-            onSelectGoalBreakdown={(area) => {
+            onNavigateToBreakdown={(area) => {
               setSelectedArea(area);
               setCurrentTab('breakdown');
+            }}
+            onNavigateToQuarter={(area, q) => {
+              setSelectedArea(area);
+              setSelectedQuarter(q);
+              setCurrentTab('quarters');
+            }}
+            onNavigateToMonth={(area, m) => {
+              setSelectedArea(area);
+              setSelectedMonth(m);
+              setCurrentTab('months');
+            }}
+            onNavigateToWeek={(area, m, w) => {
+              setSelectedArea(area);
+              setSelectedMonth(m);
+              setSelectedWeek(w);
+              setCurrentTab('week');
             }}
           />
         );
@@ -89,7 +105,8 @@ export default function App() {
             onUpdateState={handleUpdateState}
             selectedArea={selectedArea}
             onSelectArea={setSelectedArea}
-            onNavigateToQuarter={(q) => {
+            onNavigateToQuarter={(area, q) => {
+              setSelectedArea(area);
               setSelectedQuarter(q);
               setCurrentTab('quarters');
             }}
@@ -100,9 +117,12 @@ export default function App() {
           <QuarterPlanScreen
             state={state}
             onUpdateState={handleUpdateState}
+            selectedArea={selectedArea}
+            onSelectArea={setSelectedArea}
             selectedQuarter={selectedQuarter}
             onSelectQuarter={setSelectedQuarter}
-            onSelectMonth={(m) => {
+            onSelectMonth={(area, m) => {
+              setSelectedArea(area);
               setSelectedMonth(m);
               setCurrentTab('months');
             }}
@@ -113,10 +133,21 @@ export default function App() {
           <MonthPlanScreen
             state={state}
             onUpdateState={handleUpdateState}
+            selectedArea={selectedArea}
+            onSelectArea={setSelectedArea}
             selectedMonth={selectedMonth}
             onSelectMonth={setSelectedMonth}
-            onNavigateToWeek={() => setCurrentTab('week')}
-            onNavigateToReview={() => setCurrentTab('review')}
+            onNavigateToWeek={(area, m, w) => {
+              setSelectedArea(area);
+              setSelectedMonth(m);
+              setSelectedWeek(w);
+              setCurrentTab('week');
+            }}
+            onNavigateToReview={(area, m) => {
+              setSelectedArea(area);
+              setSelectedMonth(m);
+              setCurrentTab('review');
+            }}
           />
         );
       case 'week':
@@ -124,6 +155,12 @@ export default function App() {
           <WeekPlanScreen
             state={state}
             onUpdateState={handleUpdateState}
+            selectedArea={selectedArea}
+            onSelectArea={setSelectedArea}
+            selectedMonth={selectedMonth}
+            onSelectMonth={setSelectedMonth}
+            selectedWeek={selectedWeek}
+            onSelectWeek={setSelectedWeek}
           />
         );
       case 'review':
@@ -131,6 +168,8 @@ export default function App() {
           <MonthReviewScreen
             state={state}
             onUpdateState={handleUpdateState}
+            selectedArea={selectedArea}
+            onSelectArea={setSelectedArea}
             selectedMonth={selectedMonth}
             onSelectMonth={setSelectedMonth}
           />
@@ -167,7 +206,7 @@ const styles = StyleSheet.create({
   },
   outerContainer: {
     flex: 1,
-    backgroundColor: '#F3EFEA', // Subtle desk/tabletop contrast for web/desktop
+    backgroundColor: '#F3EFEA',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -177,7 +216,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.background,
   },
   mainWrapperDesktop: {
-    maxWidth: 820,
+    maxWidth: 840,
     height: '96%',
     borderRadius: THEME.radius.lg,
     borderWidth: 1,

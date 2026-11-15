@@ -14,52 +14,32 @@ import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { PrioritySelector } from '../components/PrioritySelector';
 import { JOURNAL_QUOTES } from '../constants/quotes';
+import { getLifeAreaIcon } from '../components/GoalScopeHeader';
 import {
-  Sparkles,
-  Heart,
-  Sun,
-  Briefcase,
-  Coins,
-  Users,
-  HandHeart,
-  Palmtree,
   ArrowRight,
   CheckCircle2,
+  Compass,
+  Calendar,
+  Clock,
+  Layers,
 } from 'lucide-react-native';
 
 interface YearGoalsScreenProps {
   state: JournalState;
   onUpdateState: (newState: JournalState) => void;
-  onSelectGoalBreakdown: (area: LifeArea) => void;
+  onNavigateToBreakdown: (area: LifeArea) => void;
+  onNavigateToQuarter: (area: LifeArea, quarter: 1 | 2 | 3 | 4) => void;
+  onNavigateToMonth: (area: LifeArea, month: number) => void;
+  onNavigateToWeek: (area: LifeArea, month: number, week: number) => void;
 }
-
-const getAreaIcon = (area: LifeArea) => {
-  const size = 18;
-  const color = THEME.colors.primary;
-  switch (area) {
-    case 'Personal growth':
-      return <Sparkles size={size} color={color} />;
-    case 'Health and wellbeing':
-      return <Heart size={size} color={color} />;
-    case 'Spiritual life':
-      return <Sun size={size} color={color} />;
-    case 'Career or business':
-      return <Briefcase size={size} color={color} />;
-    case 'Financial':
-      return <Coins size={size} color={color} />;
-    case 'Family and relationships':
-      return <Users size={size} color={color} />;
-    case 'Community and impact':
-      return <HandHeart size={size} color={color} />;
-    case 'Rest and joy':
-      return <Palmtree size={size} color={color} />;
-  }
-};
 
 export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   state,
   onUpdateState,
-  onSelectGoalBreakdown,
+  onNavigateToBreakdown,
+  onNavigateToQuarter,
+  onNavigateToMonth,
+  onNavigateToWeek,
 }) => {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
@@ -116,18 +96,14 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
           </Text>
         </View>
         <Text style={styles.bannerHint}>
-          Tap any card's "Break Down Goal" to map out quarterly milestones and support needed.
+          Each goal cascades into its own quarterly, monthly, and weekly plans.
         </Text>
       </View>
 
       <View style={[styles.grid, isWide && styles.gridWide]}>
         {LIFE_AREAS.map((item) => {
-          const goal = state.goals[item.key] || {
-            area: item.key,
-            text: '',
-            priority: 1,
-            isTopThree: false,
-          };
+          const goal = state.goals[item.key];
+          if (!goal) return null;
 
           return (
             <View
@@ -140,7 +116,7 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
             >
               <View style={styles.cardHeader}>
                 <View style={styles.cardTitleRow}>
-                  {getAreaIcon(item.key)}
+                  {getLifeAreaIcon(item.key, 18, THEME.colors.primary)}
                   <Text style={styles.cardTitle}>{item.label}</Text>
                 </View>
                 {goal.isTopThree && (
@@ -167,14 +143,44 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                 onToggleTopThree={() => handleToggleTopThree(item.key)}
               />
 
-              <Pressable
-                onPress={() => onSelectGoalBreakdown(item.key)}
-                style={styles.breakdownButton}
-                hitSlop={4}
-              >
-                <Text style={styles.breakdownButtonText}>Break Down Goal</Text>
-                <ArrowRight size={13} color={THEME.colors.primary} />
-              </Pressable>
+              {/* Navigation Action Pills for this Goal */}
+              <View style={styles.actionPillsRow}>
+                <Pressable
+                  onPress={() => onNavigateToBreakdown(item.key)}
+                  style={styles.actionPillPrimary}
+                  hitSlop={4}
+                >
+                  <Layers size={12} color="#FFFFFF" />
+                  <Text style={styles.actionPillPrimaryText}>Breakdown</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => onNavigateToQuarter(item.key, 1)}
+                  style={styles.actionPillSecondary}
+                  hitSlop={4}
+                >
+                  <Compass size={12} color={THEME.colors.primary} />
+                  <Text style={styles.actionPillSecondaryText}>Quarters</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => onNavigateToMonth(item.key, 1)}
+                  style={styles.actionPillSecondary}
+                  hitSlop={4}
+                >
+                  <Calendar size={12} color={THEME.colors.secondary} />
+                  <Text style={styles.actionPillSecondaryText}>Months</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => onNavigateToWeek(item.key, 1, 1)}
+                  style={styles.actionPillSecondary}
+                  hitSlop={4}
+                >
+                  <Clock size={12} color={THEME.colors.textDark} />
+                  <Text style={styles.actionPillSecondaryText}>Weeks</Text>
+                </Pressable>
+              </View>
             </View>
           );
         })}
@@ -284,17 +290,44 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     paddingVertical: 4,
   },
-  breakdownButton: {
+  actionPillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.linedPaper,
+  },
+  actionPillPrimary: {
+    flex: 1.2,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     gap: 4,
-    marginTop: 8,
-    paddingTop: 6,
+    backgroundColor: THEME.colors.primary,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  breakdownButtonText: {
-    fontSize: 12,
+  actionPillPrimaryText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: THEME.colors.primary,
+    color: '#FFFFFF',
+  },
+  actionPillSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    backgroundColor: THEME.colors.primaryLight,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6D3D7',
+  },
+  actionPillSecondaryText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: THEME.colors.textDark,
   },
 });

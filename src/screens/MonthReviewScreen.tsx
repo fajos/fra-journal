@@ -6,15 +6,15 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  useWindowDimensions,
 } from 'react-native';
-import { JournalState, MonthReview } from '../types/journal';
+import { JournalState, LifeArea, MonthReview } from '../types/journal';
 import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
+import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { MONTH_NAMES } from '../storage/journalStorage';
+import { MONTH_NAMES, updateGoalMonthReview } from '../storage/journalStorage';
 import {
   Trophy,
   AlertCircle,
@@ -27,6 +27,8 @@ import {
 interface MonthReviewScreenProps {
   state: JournalState;
   onUpdateState: (newState: JournalState) => void;
+  selectedArea: LifeArea;
+  onSelectArea: (area: LifeArea) => void;
   selectedMonth: number;
   onSelectMonth: (m: number) => void;
 }
@@ -34,11 +36,18 @@ interface MonthReviewScreenProps {
 export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
   state,
   onUpdateState,
+  selectedArea,
+  onSelectArea,
   selectedMonth,
   onSelectMonth,
 }) => {
-  const currentReview: MonthReview = state.monthReviews[selectedMonth] || {
-    monthIndex: selectedMonth,
+  const currentGoal = state.goals[selectedArea];
+  if (!currentGoal) return null;
+
+  const currentMonthPlan = currentGoal.monthPlans[selectedMonth];
+  if (!currentMonthPlan) return null;
+
+  const currentReview: MonthReview = currentMonthPlan.review || {
     whatIAchieved: '',
     whatWasLeftUndone: '',
     whatGotInTheWay: '',
@@ -53,27 +62,28 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
     },
   };
 
-  const updateReview = (updates: Partial<MonthReview>) => {
-    const updated = {
-      ...state.monthReviews,
-      [selectedMonth]: {
-        ...currentReview,
-        ...updates,
-      },
-    };
-    onUpdateState({ ...state, monthReviews: updated });
+  const handleUpdateAchieved = (whatIAchieved: string) => {
+    onUpdateState(updateGoalMonthReview(state, selectedArea, selectedMonth, { whatIAchieved }));
+  };
+
+  const handleUpdateUndone = (whatWasLeftUndone: string) => {
+    onUpdateState(updateGoalMonthReview(state, selectedArea, selectedMonth, { whatWasLeftUndone }));
+  };
+
+  const handleUpdateGotInTheWay = (whatGotInTheWay: string) => {
+    onUpdateState(updateGoalMonthReview(state, selectedArea, selectedMonth, { whatGotInTheWay }));
   };
 
   const handleToggleCarryForward = (index: number) => {
     const items = [...currentReview.carryForwardItems];
     items[index] = { ...items[index], completed: !items[index].completed };
-    updateReview({ carryForwardItems: items });
+    onUpdateState(updateGoalMonthReview(state, selectedArea, selectedMonth, { carryForwardItems: items }));
   };
 
   const handleChangeCarryForwardText = (index: number, text: string) => {
     const items = [...currentReview.carryForwardItems];
     items[index] = { ...items[index], text };
-    updateReview({ carryForwardItems: items });
+    onUpdateState(updateGoalMonthReview(state, selectedArea, selectedMonth, { carryForwardItems: items }));
   };
 
   const handleAddCarryForwardItem = () => {
@@ -81,16 +91,18 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
       ...currentReview.carryForwardItems,
       { id: Date.now().toString(), text: '', completed: false },
     ];
-    updateReview({ carryForwardItems: items });
+    onUpdateState(updateGoalMonthReview(state, selectedArea, selectedMonth, { carryForwardItems: items }));
   };
 
   const updateReflection = (key: 'oneWin' | 'oneLesson' | 'gratefulFor', text: string) => {
-    updateReview({
-      reflection: {
-        ...currentReview.reflection,
-        [key]: text,
-      },
-    });
+    onUpdateState(
+      updateGoalMonthReview(state, selectedArea, selectedMonth, {
+        reflection: {
+          ...currentReview.reflection,
+          [key]: text,
+        },
+      })
+    );
   };
 
   return (
@@ -99,6 +111,13 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
         title="Month in review"
         subtitle={`Reviewing: ${MONTH_NAMES[selectedMonth - 1]}`}
         year={state.year}
+      />
+
+      <GoalScopeHeader
+        selectedArea={selectedArea}
+        onSelectArea={onSelectArea}
+        goalText={currentGoal.text}
+        monthName={MONTH_NAMES[selectedMonth - 1]}
       />
 
       {/* Month picker chips */}
@@ -133,8 +152,8 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
           </View>
           <TextInput
             value={currentReview.whatIAchieved}
-            onChangeText={(t) => updateReview({ whatIAchieved: t })}
-            placeholder="Celebrate completed goals, progress milestones, and healthy habits formed..."
+            onChangeText={handleUpdateAchieved}
+            placeholder={`Celebrate milestones and habits achieved for ${selectedArea}...`}
             placeholderTextColor={THEME.colors.textLight}
             multiline
             numberOfLines={3}
@@ -150,7 +169,7 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
           </View>
           <TextInput
             value={currentReview.whatWasLeftUndone}
-            onChangeText={(t) => updateReview({ whatWasLeftUndone: t })}
+            onChangeText={handleUpdateUndone}
             placeholder="Acknowledge with self-compassion what didn't get finished..."
             placeholderTextColor={THEME.colors.textLight}
             multiline
@@ -167,8 +186,8 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
           </View>
           <TextInput
             value={currentReview.whatGotInTheWay}
-            onChangeText={(t) => updateReview({ whatGotInTheWay: t })}
-            placeholder="Distractions, unexpected life events, low energy, unclear priorities..."
+            onChangeText={handleUpdateGotInTheWay}
+            placeholder="Obstacles, energy dips, time crunches, or unclear priorities..."
             placeholderTextColor={THEME.colors.textLight}
             multiline
             numberOfLines={3}
@@ -219,7 +238,7 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
               <TextInput
                 value={currentReview.reflection.oneWin}
                 onChangeText={(t) => updateReflection('oneWin', t)}
-                placeholder="The single victory I am most proud of..."
+                placeholder="The single victory I am most proud of in this area..."
                 placeholderTextColor={THEME.colors.textLight}
                 style={styles.singleLineInput}
               />
@@ -230,7 +249,7 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
               <TextInput
                 value={currentReview.reflection.oneLesson}
                 onChangeText={(t) => updateReflection('oneLesson', t)}
-                placeholder="The core insight I will remember..."
+                placeholder="The core insight I learned..."
                 placeholderTextColor={THEME.colors.textLight}
                 style={styles.singleLineInput}
               />
@@ -241,7 +260,7 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
               <TextInput
                 value={currentReview.reflection.gratefulFor}
                 onChangeText={(t) => updateReflection('gratefulFor', t)}
-                placeholder="A person, moment, or feeling I appreciate..."
+                placeholder="What or who supported me in this journey..."
                 placeholderTextColor={THEME.colors.textLight}
                 style={styles.singleLineInput}
               />

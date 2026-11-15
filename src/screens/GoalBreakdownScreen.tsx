@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,11 @@ import {
   TextInput,
   useWindowDimensions,
 } from 'react-native';
-import { LifeArea, LIFE_AREAS, JournalState } from '../types/journal';
+import { LifeArea, JournalState } from '../types/journal';
 import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
+import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
 import { ChevronRight, Target, Sparkles, HeartHandshake, Layers } from 'lucide-react-native';
 
@@ -20,7 +21,7 @@ interface GoalBreakdownScreenProps {
   onUpdateState: (newState: JournalState) => void;
   selectedArea: LifeArea;
   onSelectArea: (area: LifeArea) => void;
-  onNavigateToQuarter?: (q: 1 | 2 | 3 | 4) => void;
+  onNavigateToQuarter: (area: LifeArea, quarter: 1 | 2 | 3 | 4) => void;
 }
 
 export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
@@ -33,15 +34,8 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
 
-  const currentGoal = state.goals[selectedArea] || {
-    area: selectedArea,
-    text: '',
-    priority: 1,
-    isTopThree: false,
-    whyItMatters: '',
-    milestones: { q1: '', q2: '', q3: '', q4: '' },
-    supportNeeded: '',
-  };
+  const currentGoal = state.goals[selectedArea];
+  if (!currentGoal) return null;
 
   const updateCurrentGoal = (updates: Partial<typeof currentGoal>) => {
     const updatedGoals = {
@@ -71,29 +65,11 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
         year={state.year}
       />
 
-      {/* Horizontal Area Selector Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.areaScroll}
-      >
-        {LIFE_AREAS.map((item) => {
-          const isActive = item.key === selectedArea;
-          const hasGoal = !!state.goals[item.key]?.text;
-          return (
-            <Pressable
-              key={item.key}
-              onPress={() => onSelectArea(item.key)}
-              style={[styles.areaChip, isActive && styles.areaChipActive]}
-            >
-              <Text style={[styles.areaChipText, isActive && styles.areaChipTextActive]}>
-                {item.label}
-              </Text>
-              {hasGoal && <View style={[styles.activeDot, isActive && styles.activeDotWhite]} />}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <GoalScopeHeader
+        selectedArea={selectedArea}
+        onSelectArea={onSelectArea}
+        goalText={currentGoal.text}
+      />
 
       <View style={styles.formContainer}>
         {/* Section 1: My Goal */}
@@ -137,7 +113,7 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
             <Text style={styles.sectionTitle}>Milestones</Text>
           </View>
           <Text style={styles.sectionHint}>
-            Break down the annual goal into achievable quarterly checkpoints:
+            Break down this goal into achievable quarterly checkpoints:
           </Text>
 
           <View style={[styles.milestoneGrid, isWide && styles.milestoneGridWide]}>
@@ -153,16 +129,14 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
               >
                 <View style={styles.quarterHeader}>
                   <Text style={styles.quarterTitle}>{label}</Text>
-                  {onNavigateToQuarter && (
-                    <Pressable
-                      onPress={() => onNavigateToQuarter(num)}
-                      hitSlop={6}
-                      style={styles.quarterLink}
-                    >
-                      <Text style={styles.quarterLinkText}>Plan Q{num}</Text>
-                      <ChevronRight size={12} color={THEME.colors.primary} />
-                    </Pressable>
-                  )}
+                  <Pressable
+                    onPress={() => onNavigateToQuarter(selectedArea, num)}
+                    hitSlop={6}
+                    style={styles.quarterLink}
+                  >
+                    <Text style={styles.quarterLinkText}>Plan Q{num}</Text>
+                    <ChevronRight size={12} color={THEME.colors.primary} />
+                  </Pressable>
                 </View>
                 <TextInput
                   value={currentGoal.milestones[key]}
@@ -211,44 +185,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
-  },
-  areaScroll: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    gap: 8,
-  },
-  areaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  areaChipActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
-  },
-  areaChipText: {
-    fontSize: 12.5,
-    fontFamily: THEME.typography.fontFamilySans,
-    fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  areaChipTextActive: {
-    color: '#FFFFFF',
-  },
-  activeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: THEME.colors.primary,
-  },
-  activeDotWhite: {
-    backgroundColor: '#FFFFFF',
   },
   formContainer: {
     paddingHorizontal: 16,

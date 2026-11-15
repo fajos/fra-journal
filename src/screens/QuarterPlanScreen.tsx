@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,61 +6,44 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  useWindowDimensions,
 } from 'react-native';
-import { JournalState, CheckItem, QuarterPlan } from '../types/journal';
+import { JournalState, LifeArea, QuarterPlan } from '../types/journal';
 import { THEME } from '../constants/theme';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
+import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { MONTH_NAMES } from '../storage/journalStorage';
-import { Compass, Calendar, ArrowRight, Plus } from 'lucide-react-native';
+import { MONTH_NAMES, updateGoalQuarter } from '../storage/journalStorage';
+import { Compass, Calendar, ArrowRight } from 'lucide-react-native';
 
 interface QuarterPlanScreenProps {
   state: JournalState;
   onUpdateState: (newState: JournalState) => void;
+  selectedArea: LifeArea;
+  onSelectArea: (area: LifeArea) => void;
   selectedQuarter: 1 | 2 | 3 | 4;
   onSelectQuarter: (q: 1 | 2 | 3 | 4) => void;
-  onSelectMonth?: (mIndex: number) => void;
+  onSelectMonth: (area: LifeArea, mIndex: number) => void;
 }
 
 export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
   state,
   onUpdateState,
+  selectedArea,
+  onSelectArea,
   selectedQuarter,
   onSelectQuarter,
   onSelectMonth,
 }) => {
-  const currentPlan: QuarterPlan = state.quarterPlans[selectedQuarter] || {
-    quarter: selectedQuarter,
-    theme: '',
-    month1: [
-      { id: '1', text: '', completed: false },
-      { id: '2', text: '', completed: false },
-      { id: '3', text: '', completed: false },
-    ],
-    month2: [
-      { id: '1', text: '', completed: false },
-      { id: '2', text: '', completed: false },
-      { id: '3', text: '', completed: false },
-    ],
-    month3: [
-      { id: '1', text: '', completed: false },
-      { id: '2', text: '', completed: false },
-      { id: '3', text: '', completed: false },
-    ],
-  };
+  const currentGoal = state.goals[selectedArea];
+  if (!currentGoal) return null;
 
-  const updateQuarterPlan = (updates: Partial<QuarterPlan>) => {
-    const updated = {
-      ...state.quarterPlans,
-      [selectedQuarter]: {
-        ...currentPlan,
-        ...updates,
-      },
-    };
-    onUpdateState({ ...state, quarterPlans: updated });
+  const currentPlan: QuarterPlan = currentGoal.quarterPlans[selectedQuarter];
+  if (!currentPlan) return null;
+
+  const handleUpdateTheme = (theme: string) => {
+    onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { theme }));
   };
 
   const startMonthIndex = (selectedQuarter - 1) * 3 + 1; // 1, 4, 7, 10
@@ -73,7 +56,7 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
   const handleToggleItem = (monthKey: 'month1' | 'month2' | 'month3', index: number) => {
     const items = [...currentPlan[monthKey]];
     items[index] = { ...items[index], completed: !items[index].completed };
-    updateQuarterPlan({ [monthKey]: items });
+    onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { [monthKey]: items }));
   };
 
   const handleChangeItemText = (
@@ -83,15 +66,22 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
   ) => {
     const items = [...currentPlan[monthKey]];
     items[index] = { ...items[index], text };
-    updateQuarterPlan({ [monthKey]: items });
+    onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { [monthKey]: items }));
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FloralHeader
         title={`Quarter ${selectedQuarter} plan`}
-        subtitle="Break down the quarter into high-impact monthly targets"
+        subtitle={`Goal: ${selectedArea}`}
         year={state.year}
+      />
+
+      <GoalScopeHeader
+        selectedArea={selectedArea}
+        onSelectArea={onSelectArea}
+        goalText={currentGoal.text}
+        quarter={selectedQuarter}
       />
 
       {/* Quarter Tab Selector */}
@@ -121,8 +111,8 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
           </View>
           <TextInput
             value={currentPlan.theme}
-            onChangeText={(t) => updateQuarterPlan({ theme: t })}
-            placeholder="e.g. Foundation & Consistency, Expansion, Health Reset..."
+            onChangeText={handleUpdateTheme}
+            placeholder={`e.g. Focus theme for Q${selectedQuarter} (${selectedArea})...`}
             placeholderTextColor={THEME.colors.textLight}
             multiline
             numberOfLines={2}
@@ -142,16 +132,14 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
                     Month {mOrder + 1} <Text style={styles.monthSubtitle}>({label})</Text>
                   </Text>
                 </View>
-                {onSelectMonth && (
-                  <Pressable
-                    onPress={() => onSelectMonth(mIndex)}
-                    style={styles.openMonthButton}
-                    hitSlop={6}
-                  >
-                    <Text style={styles.openMonthButtonText}>View Planner</Text>
-                    <ArrowRight size={12} color={THEME.colors.primary} />
-                  </Pressable>
-                )}
+                <Pressable
+                  onPress={() => onSelectMonth(selectedArea, mIndex)}
+                  style={styles.openMonthButton}
+                  hitSlop={6}
+                >
+                  <Text style={styles.openMonthButtonText}>View Planner</Text>
+                  <ArrowRight size={12} color={THEME.colors.primary} />
+                </Pressable>
               </View>
 
               <View style={styles.checkboxList}>
@@ -160,7 +148,7 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
                     key={item.id || idx}
                     text={item.text}
                     completed={item.completed}
-                    placeholder={`Key focus for ${label} (target ${idx + 1})...`}
+                    placeholder={`Key target for ${label} (target ${idx + 1})...`}
                     onToggle={() => handleToggleItem(key, idx)}
                     onChangeText={(t) => handleChangeItemText(key, idx, t)}
                   />
