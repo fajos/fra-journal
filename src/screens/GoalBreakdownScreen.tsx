@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { LifeArea, JournalState } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
@@ -44,6 +44,7 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const { theme } = useTheme();
 
   // Modals state
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
@@ -97,7 +98,10 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <FloralHeader
         title="Goal breakdown"
         subtitle={`Area: ${selectedArea}`}
@@ -112,56 +116,86 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
 
       <View style={styles.formContainer}>
         {/* Section 1: My Goal */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.sectionHeader}>
-            <Target size={17} color={THEME.colors.primary} />
-            <Text style={styles.sectionTitle}>My goal</Text>
+            <Target size={17} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              My goal
+            </Text>
           </View>
           <TextInput
             value={currentGoal.text}
             onChangeText={(t) => updateCurrentGoal({ text: t })}
             placeholder="What specific goal do you want to achieve in this area?"
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={2}
-            style={styles.textInput}
+            style={[styles.textInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
 
         {/* Section 2: Why it matters to me */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.headerBetween}>
             <View style={styles.sectionHeader}>
-              <Sparkles size={17} color={THEME.colors.primary} />
-              <Text style={styles.sectionTitle}>Why it matters to me</Text>
+              <Sparkles size={17} color={theme.colors.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+                Why it matters to me
+              </Text>
             </View>
             <Pressable
               onPress={() => handleOpenPrompts('whyItMatters')}
-              style={styles.promptHelperBtn}
+              style={[styles.promptHelperBtn, { backgroundColor: theme.colors.primaryLight }]}
               hitSlop={6}
             >
-              <HelpCircle size={13} color={THEME.colors.primary} />
-              <Text style={styles.promptHelperText}>Prompts</Text>
+              <HelpCircle size={13} color={theme.colors.primary} />
+              <Text style={[styles.promptHelperText, { color: theme.colors.primary }]}>Prompts</Text>
             </Pressable>
           </View>
           <TextInput
             value={currentGoal.whyItMatters}
             onChangeText={(t) => updateCurrentGoal({ whyItMatters: t })}
             placeholder="Connect with your deeper purpose: why is achieving this essential to your life?"
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={3}
-            style={styles.textInput}
+            style={[styles.textInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
 
         {/* Section 3: Milestones (Quarterly 2x2 Grid) */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.sectionHeader}>
-            <Layers size={17} color={THEME.colors.primary} />
-            <Text style={styles.sectionTitle}>Milestones</Text>
+            <Layers size={17} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Milestones
+            </Text>
           </View>
-          <Text style={styles.sectionHint}>
+          <Text style={[styles.sectionHint, { color: theme.colors.textMuted }]}>
             Break down this goal into quarterly targets with optional date reminders:
           </Text>
 
@@ -174,25 +208,34 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
             ] as const).map(({ key, num, label }) => (
               <View
                 key={key}
-                style={[styles.quarterBox, isWide && styles.quarterBoxWide]}
+                style={[
+                  styles.quarterBox,
+                  isWide && styles.quarterBoxWide,
+                  {
+                    backgroundColor: theme.isDark ? '#23232A' : '#FCFAF7',
+                    borderColor: theme.colors.linedPaper,
+                  },
+                ]}
               >
-                <View style={styles.quarterHeader}>
-                  <Text style={styles.quarterTitle}>{label}</Text>
+                <View style={[styles.quarterHeader, { borderBottomColor: theme.colors.linedPaper }]}>
+                  <Text style={[styles.quarterTitle, { color: theme.colors.primary, fontFamily: theme.typography.fontFamilySerif }]}>
+                    {label}
+                  </Text>
                   <View style={styles.quarterActionGroup}>
                     <Pressable
                       onPress={() => handleOpenReminder(currentGoal.milestones[key] || `${label} Milestone`)}
                       hitSlop={6}
                       style={styles.reminderIconBtn}
                     >
-                      <Bell size={12} color={THEME.colors.textMuted} />
+                      <Bell size={12} color={theme.colors.textMuted} />
                     </Pressable>
                     <Pressable
                       onPress={() => onNavigateToQuarter(selectedArea, num)}
                       hitSlop={6}
                       style={styles.quarterLink}
                     >
-                      <Text style={styles.quarterLinkText}>Plan Q{num}</Text>
-                      <ChevronRight size={12} color={THEME.colors.primary} />
+                      <Text style={[styles.quarterLinkText, { color: theme.colors.primary }]}>Plan Q{num}</Text>
+                      <ChevronRight size={12} color={theme.colors.primary} />
                     </Pressable>
                   </View>
                 </View>
@@ -200,10 +243,10 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
                   value={currentGoal.milestones[key]}
                   onChangeText={(t) => handleMilestoneChange(key, t)}
                   placeholder={`Milestones for ${label}...`}
-                  placeholderTextColor={THEME.colors.textLight}
+                  placeholderTextColor={theme.colors.textLight}
                   multiline
                   numberOfLines={3}
-                  style={styles.quarterInput}
+                  style={[styles.quarterInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
                 />
               </View>
             ))}
@@ -211,29 +254,39 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
         </View>
 
         {/* Section 4: Support I need */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.headerBetween}>
             <View style={styles.sectionHeader}>
-              <HeartHandshake size={17} color={THEME.colors.primary} />
-              <Text style={styles.sectionTitle}>Support I need</Text>
+              <HeartHandshake size={17} color={theme.colors.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+                Support I need
+              </Text>
             </View>
             <Pressable
               onPress={() => handleOpenPrompts('supportNeeded')}
-              style={styles.promptHelperBtn}
+              style={[styles.promptHelperBtn, { backgroundColor: theme.colors.primaryLight }]}
               hitSlop={6}
             >
-              <HelpCircle size={13} color={THEME.colors.primary} />
-              <Text style={styles.promptHelperText}>Prompts</Text>
+              <HelpCircle size={13} color={theme.colors.primary} />
+              <Text style={[styles.promptHelperText, { color: theme.colors.primary }]}>Prompts</Text>
             </Pressable>
           </View>
           <TextInput
             value={currentGoal.supportNeeded}
             onChangeText={(t) => updateCurrentGoal({ supportNeeded: t })}
             placeholder="Who can keep you accountable? What tools, books, mentors, or habits do you need?"
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={3}
-            style={styles.textInput}
+            style={[styles.textInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
       </View>
@@ -265,7 +318,6 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   content: {
     paddingBottom: 40,
@@ -275,13 +327,10 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   card: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 16,
     marginBottom: 14,
-    ...THEME.shadow,
   },
   headerBetween: {
     flexDirection: 'row',
@@ -296,15 +345,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   promptHelperBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: THEME.colors.primaryLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -312,18 +358,15 @@ const styles = StyleSheet.create({
   promptHelperText: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.colors.primary,
   },
   sectionHint: {
     fontSize: 12,
-    color: THEME.colors.textMuted,
     marginBottom: 10,
     fontStyle: 'italic',
   },
   textInput: {
     fontSize: 14,
     lineHeight: 22,
-    color: THEME.colors.textDark,
     minHeight: 50,
     textAlignVertical: 'top',
   },
@@ -335,10 +378,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   quarterBox: {
-    backgroundColor: '#FCFAF7',
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.linedPaper,
     padding: 10,
   },
   quarterBoxWide: {
@@ -350,14 +391,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
     paddingBottom: 4,
   },
   quarterTitle: {
     fontSize: 13,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.primary,
   },
   quarterActionGroup: {
     flexDirection: 'row',
@@ -374,13 +412,11 @@ const styles = StyleSheet.create({
   },
   quarterLinkText: {
     fontSize: 11,
-    color: THEME.colors.primary,
     fontWeight: '600',
   },
   quarterInput: {
     fontSize: 13,
     lineHeight: 19,
-    color: THEME.colors.textDark,
     minHeight: 52,
     textAlignVertical: 'top',
   },

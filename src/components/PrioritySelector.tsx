@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { THEME } from '../constants/theme';
 import { Star } from 'lucide-react-native';
+import { useTheme } from '../context/ThemeContext';
 import { hapticFeedback } from '../services/hapticsService';
 
 interface PrioritySelectorProps {
@@ -17,6 +17,8 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({
   isTopThree,
   onToggleTopThree,
 }) => {
+  const { theme } = useTheme();
+
   const handleSelect = (level: 1 | 2 | 3) => {
     hapticFeedback.selection();
     onChangePriority(level);
@@ -28,9 +30,11 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderTopColor: theme.colors.linedPaper }]}>
       <View style={styles.priorityRow}>
-        <Text style={styles.label}>Priority</Text>
+        <Text style={[styles.label, { color: theme.colors.textMuted, fontFamily: theme.typography.fontFamilySans }]}>
+          Priority
+        </Text>
         <View style={styles.circles}>
           {([1, 2, 3] as const).map((level) => {
             const isFilled = priority >= level;
@@ -40,11 +44,14 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                 onPress={() => handleSelect(level)}
                 style={[
                   styles.circle,
-                  isFilled && styles.circleFilled,
+                  {
+                    borderColor: isFilled ? theme.colors.primary : theme.colors.textMuted,
+                    backgroundColor: isFilled ? theme.colors.primaryLight : theme.colors.cardBackground,
+                  },
                 ]}
                 hitSlop={6}
               >
-                {isFilled && <View style={styles.innerDot} />}
+                {isFilled && <View style={[styles.innerDot, { backgroundColor: theme.colors.primary }]} />}
               </Pressable>
             );
           })}
@@ -54,15 +61,26 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({
       {onToggleTopThree && (
         <Pressable
           onPress={handleTopThree}
-          style={[styles.topThreeBadge, isTopThree && styles.topThreeBadgeActive]}
+          style={[
+            styles.topThreeBadge,
+            {
+              borderColor: theme.colors.primary,
+              backgroundColor: isTopThree ? theme.colors.primary : 'transparent',
+            },
+          ]}
           hitSlop={6}
         >
           <Star
             size={12}
-            color={isTopThree ? '#FFFFFF' : THEME.colors.primary}
+            color={isTopThree ? '#FFFFFF' : theme.colors.primary}
             fill={isTopThree ? '#FFFFFF' : 'none'}
           />
-          <Text style={[styles.topThreeText, isTopThree && styles.topThreeTextActive]}>
+          <Text
+            style={[
+              styles.topThreeText,
+              { color: isTopThree ? '#FFFFFF' : theme.colors.primary },
+            ]}
+          >
             {isTopThree ? 'Top 3 Goal' : 'Set Top 3'}
           </Text>
         </Pressable>
@@ -79,7 +97,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.linedPaper,
   },
   priorityRow: {
     flexDirection: 'row',
@@ -88,8 +105,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontFamily: THEME.typography.fontFamilySans,
-    color: THEME.colors.textMuted,
     fontWeight: '500',
   },
   circles: {
@@ -102,20 +117,13 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: THEME.colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  circleFilled: {
-    borderColor: THEME.colors.primary,
-    backgroundColor: THEME.colors.primaryLight,
   },
   innerDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: THEME.colors.primary,
   },
   topThreeBadge: {
     flexDirection: 'row',
@@ -125,19 +133,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.colors.primary,
-    backgroundColor: 'transparent',
-  },
-  topThreeBadgeActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
   },
   topThreeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.colors.primary,
-  },
-  topThreeTextActive: {
-    color: '#FFFFFF',
   },
 });

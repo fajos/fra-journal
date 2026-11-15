@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, ViewStyle } from 'react-native';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface JournalBoxProps {
   title?: string;
@@ -23,22 +23,54 @@ export const JournalBox: React.FC<JournalBoxProps> = ({
   style,
   numberOfLines = 3,
 }) => {
+  const { theme } = useTheme();
+
   return (
-    <View style={[styles.container, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.colors.cardBackground,
+          borderColor: theme.colors.cardBorder,
+        },
+        style,
+      ]}
+    >
       {title && (
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          <Text
+            style={[
+              styles.title,
+              {
+                color: theme.colors.textDark,
+                fontFamily: theme.typography.fontFamilySerif,
+              },
+            ]}
+          >
+            {title}
+          </Text>
+          {subtitle && (
+            <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
+              {subtitle}
+            </Text>
+          )}
         </View>
       )}
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder || 'Write here...'}
-        placeholderTextColor={THEME.colors.textLight}
+        placeholderTextColor={theme.colors.textLight}
         multiline
         numberOfLines={numberOfLines}
-        style={[styles.input, { minHeight }]}
+        style={[
+          styles.input,
+          {
+            minHeight,
+            color: theme.colors.textDark,
+            fontFamily: theme.typography.fontFamilySans,
+          },
+        ]}
       />
     </View>
   );
@@ -46,34 +78,26 @@ export const JournalBox: React.FC<JournalBoxProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 14,
     marginBottom: 14,
-    ...THEME.shadow,
   },
   titleRow: {
     marginBottom: 8,
   },
   title: {
     fontSize: 15,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   subtitle: {
     fontSize: 12,
-    color: THEME.colors.textMuted,
     marginTop: 2,
     fontStyle: 'italic',
   },
   input: {
     fontSize: 14,
     lineHeight: 22,
-    color: THEME.colors.textDark,
-    fontFamily: THEME.typography.fontFamilySans,
     textAlignVertical: 'top',
   },
 });

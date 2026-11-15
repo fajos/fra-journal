@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { LifeArea, LIFE_AREAS, JournalState } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { PrioritySelector } from '../components/PrioritySelector';
@@ -18,7 +18,6 @@ import { JOURNAL_QUOTES } from '../constants/quotes';
 import { getLifeAreaIcon } from '../components/GoalScopeHeader';
 import { hapticFeedback } from '../services/hapticsService';
 import {
-  ArrowRight,
   CheckCircle2,
   Compass,
   Calendar,
@@ -47,6 +46,7 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<'cards' | 'radar'>('cards');
 
   const topThreeCount = Object.values(state.goals).filter((g) => g.isTopThree).length;
@@ -91,7 +91,10 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <FloralHeader
         title="My goals for the year"
         subtitle="Circle your top three"
@@ -99,40 +102,64 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
       />
 
       {/* Top Banner with View Switcher */}
-      <View style={styles.topBanner}>
+      <View
+        style={[
+          styles.topBanner,
+          {
+            backgroundColor: theme.colors.cardBackground,
+            borderColor: theme.colors.cardBorder,
+          },
+        ]}
+      >
         <View style={styles.bannerRow}>
           <View style={styles.counterBadge}>
-            <CheckCircle2 size={15} color={THEME.colors.primary} />
-            <Text style={styles.counterText}>
-              Top 3 Goals: <Text style={styles.bold}>{topThreeCount}/3</Text>
+            <CheckCircle2 size={15} color={theme.colors.primary} />
+            <Text style={[styles.counterText, { color: theme.colors.textDark }]}>
+              Top 3 Goals: <Text style={[styles.bold, { color: theme.colors.primary }]}>{topThreeCount}/3</Text>
             </Text>
           </View>
 
           {/* View Mode Toggle */}
-          <View style={styles.toggleRow}>
+          <View style={[styles.toggleRow, { backgroundColor: theme.colors.linedPaper }]}>
             <Pressable
               onPress={() => handleSwitchMode('cards')}
-              style={[styles.toggleBtn, viewMode === 'cards' && styles.toggleBtnActive]}
+              style={[
+                styles.toggleBtn,
+                viewMode === 'cards' && { backgroundColor: theme.colors.primary },
+              ]}
             >
-              <LayoutGrid size={13} color={viewMode === 'cards' ? '#FFFFFF' : THEME.colors.textMuted} />
-              <Text style={[styles.toggleBtnText, viewMode === 'cards' && styles.toggleBtnTextActive]}>
+              <LayoutGrid size={13} color={viewMode === 'cards' ? '#FFFFFF' : theme.colors.textMuted} />
+              <Text
+                style={[
+                  styles.toggleBtnText,
+                  { color: viewMode === 'cards' ? '#FFFFFF' : theme.colors.textMuted },
+                ]}
+              >
                 Cards
               </Text>
             </Pressable>
 
             <Pressable
               onPress={() => handleSwitchMode('radar')}
-              style={[styles.toggleBtn, viewMode === 'radar' && styles.toggleBtnActive]}
+              style={[
+                styles.toggleBtn,
+                viewMode === 'radar' && { backgroundColor: theme.colors.primary },
+              ]}
             >
-              <PieChart size={13} color={viewMode === 'radar' ? '#FFFFFF' : THEME.colors.textMuted} />
-              <Text style={[styles.toggleBtnText, viewMode === 'radar' && styles.toggleBtnTextActive]}>
+              <PieChart size={13} color={viewMode === 'radar' ? '#FFFFFF' : theme.colors.textMuted} />
+              <Text
+                style={[
+                  styles.toggleBtnText,
+                  { color: viewMode === 'radar' ? '#FFFFFF' : theme.colors.textMuted },
+                ]}
+              >
                 Life Wheel
               </Text>
             </Pressable>
           </View>
         </View>
 
-        <Text style={styles.bannerHint}>
+        <Text style={[styles.bannerHint, { color: theme.colors.textMuted }]}>
           {viewMode === 'cards'
             ? 'Each life area cascades into quarterly, monthly, and weekly plans.'
             : 'Track overall balance and momentum across your 8 life areas.'}
@@ -157,17 +184,31 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                 style={[
                   styles.card,
                   isWide && styles.cardWide,
-                  goal.isTopThree && styles.cardTopThree,
+                  {
+                    backgroundColor: theme.colors.cardBackground,
+                    borderColor: goal.isTopThree ? theme.colors.primary : theme.colors.cardBorder,
+                    borderWidth: goal.isTopThree ? 1.5 : 1,
+                  },
                 ]}
               >
                 <View style={styles.cardHeader}>
                   <View style={styles.cardTitleRow}>
-                    {getLifeAreaIcon(item.key, 18, THEME.colors.primary)}
-                    <Text style={styles.cardTitle}>{item.label}</Text>
+                    {getLifeAreaIcon(item.key, 18, theme.colors.primary)}
+                    <Text
+                      style={[
+                        styles.cardTitle,
+                        {
+                          color: theme.colors.textDark,
+                          fontFamily: theme.typography.fontFamilySerif,
+                        },
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
                   </View>
                   {goal.isTopThree && (
-                    <View style={styles.starPill}>
-                      <Text style={styles.starPillText}>★ Priority</Text>
+                    <View style={[styles.starPill, { backgroundColor: theme.colors.primaryLight }]}>
+                      <Text style={[styles.starPillText, { color: theme.colors.primary }]}>★ Priority</Text>
                     </View>
                   )}
                 </View>
@@ -176,10 +217,10 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                   value={goal.text}
                   onChangeText={(t) => handleTextChange(item.key, t)}
                   placeholder={item.defaultPlaceholder}
-                  placeholderTextColor={THEME.colors.textLight}
+                  placeholderTextColor={theme.colors.textLight}
                   multiline
                   numberOfLines={3}
-                  style={styles.cardInput}
+                  style={[styles.cardInput, { color: theme.colors.textDark }]}
                 />
 
                 <PrioritySelector
@@ -190,10 +231,10 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                 />
 
                 {/* Navigation Action Pills for this Goal */}
-                <View style={styles.actionPillsRow}>
+                <View style={[styles.actionPillsRow, { borderTopColor: theme.colors.linedPaper }]}>
                   <Pressable
                     onPress={() => onNavigateToBreakdown(item.key)}
-                    style={styles.actionPillPrimary}
+                    style={[styles.actionPillPrimary, { backgroundColor: theme.colors.primary }]}
                     hitSlop={4}
                   >
                     <Layers size={12} color="#FFFFFF" />
@@ -202,29 +243,47 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
 
                   <Pressable
                     onPress={() => onNavigateToQuarter(item.key, 1)}
-                    style={styles.actionPillSecondary}
+                    style={[
+                      styles.actionPillSecondary,
+                      {
+                        backgroundColor: theme.colors.primaryLight,
+                        borderColor: theme.colors.cardBorder,
+                      },
+                    ]}
                     hitSlop={4}
                   >
-                    <Compass size={12} color={THEME.colors.primary} />
-                    <Text style={styles.actionPillSecondaryText}>Quarters</Text>
+                    <Compass size={12} color={theme.colors.primary} />
+                    <Text style={[styles.actionPillSecondaryText, { color: theme.colors.textDark }]}>Quarters</Text>
                   </Pressable>
 
                   <Pressable
                     onPress={() => onNavigateToMonth(item.key, 1)}
-                    style={styles.actionPillSecondary}
+                    style={[
+                      styles.actionPillSecondary,
+                      {
+                        backgroundColor: theme.colors.primaryLight,
+                        borderColor: theme.colors.cardBorder,
+                      },
+                    ]}
                     hitSlop={4}
                   >
-                    <Calendar size={12} color={THEME.colors.secondary} />
-                    <Text style={styles.actionPillSecondaryText}>Months</Text>
+                    <Calendar size={12} color={theme.colors.secondary} />
+                    <Text style={[styles.actionPillSecondaryText, { color: theme.colors.textDark }]}>Months</Text>
                   </Pressable>
 
                   <Pressable
                     onPress={() => onNavigateToWeek(item.key, 1, 1)}
-                    style={styles.actionPillSecondary}
+                    style={[
+                      styles.actionPillSecondary,
+                      {
+                        backgroundColor: theme.colors.primaryLight,
+                        borderColor: theme.colors.cardBorder,
+                      },
+                    ]}
                     hitSlop={4}
                   >
-                    <Clock size={12} color={THEME.colors.textDark} />
-                    <Text style={styles.actionPillSecondaryText}>Weeks</Text>
+                    <Clock size={12} color={theme.colors.textDark} />
+                    <Text style={[styles.actionPillSecondaryText, { color: theme.colors.textDark }]}>Weeks</Text>
                   </Pressable>
                 </View>
               </View>
@@ -244,7 +303,6 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   content: {
     paddingBottom: 40,
@@ -252,11 +310,9 @@ const styles = StyleSheet.create({
   topBanner: {
     marginHorizontal: 16,
     marginBottom: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
   },
   bannerRow: {
     flexDirection: 'row',
@@ -271,15 +327,12 @@ const styles = StyleSheet.create({
   },
   counterText: {
     fontSize: 13,
-    color: THEME.colors.textDark,
   },
   bold: {
     fontWeight: '700',
-    color: THEME.colors.primary,
   },
   toggleRow: {
     flexDirection: 'row',
-    backgroundColor: '#F3EFEA',
     borderRadius: 8,
     padding: 2,
     gap: 2,
@@ -292,20 +345,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
-  toggleBtnActive: {
-    backgroundColor: THEME.colors.primary,
-  },
   toggleBtnText: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.colors.textMuted,
-  },
-  toggleBtnTextActive: {
-    color: '#FFFFFF',
   },
   bannerHint: {
     fontSize: 12,
-    color: THEME.colors.textMuted,
     fontStyle: 'italic',
   },
   grid: {
@@ -317,20 +362,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   card: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 14,
-    ...THEME.shadow,
   },
   cardWide: {
     width: '48.5%',
-  },
-  cardTopThree: {
-    borderColor: THEME.colors.primary,
-    backgroundColor: '#FFFDFD',
-    borderWidth: 1.5,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -345,12 +382,9 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   starPill: {
-    backgroundColor: THEME.colors.primaryLight,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 8,
@@ -358,12 +392,10 @@ const styles = StyleSheet.create({
   starPillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: THEME.colors.primary,
   },
   cardInput: {
     fontSize: 13.5,
     lineHeight: 20,
-    color: THEME.colors.textDark,
     minHeight: 58,
     textAlignVertical: 'top',
     paddingVertical: 4,
@@ -374,7 +406,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.linedPaper,
   },
   actionPillPrimary: {
     flex: 1.2,
@@ -382,7 +413,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: THEME.colors.primary,
     paddingVertical: 6,
     borderRadius: 8,
   },
@@ -397,15 +427,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-    backgroundColor: THEME.colors.primaryLight,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E6D3D7',
   },
   actionPillSecondaryText: {
     fontSize: 10.5,
     fontWeight: '600',
-    color: THEME.colors.textDark,
   },
 });

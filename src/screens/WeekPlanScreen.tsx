@@ -8,7 +8,7 @@ import {
   Pressable,
 } from 'react-native';
 import { JournalState, LifeArea, WeekPlan } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
@@ -24,7 +24,7 @@ interface WeekPlanScreenProps {
   onSelectArea: (area: LifeArea) => void;
   selectedMonth: number;
   onSelectMonth: (m: number) => void;
-  selectedWeek: number; // 1 to 5
+  selectedWeek: number;
   onSelectWeek: (w: number) => void;
 }
 
@@ -38,6 +38,7 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
   selectedWeek,
   onSelectWeek,
 }) => {
+  const { theme } = useTheme();
   const currentGoal = state.goals[selectedArea];
   if (!currentGoal) return null;
 
@@ -103,7 +104,10 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
   ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <FloralHeader
         title={`Week ${selectedWeek} • ${MONTH_NAMES[selectedMonth - 1]}`}
         subtitle={`Goal: ${selectedArea}`}
@@ -131,9 +135,20 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
             <Pressable
               key={name}
               onPress={() => onSelectMonth(mIndex)}
-              style={[styles.chip, isActive && styles.chipActive]}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
+                  borderColor: isActive ? theme.colors.primary : theme.colors.cardBorder,
+                },
+              ]}
             >
-              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+              <Text
+                style={[
+                  styles.chipText,
+                  { color: isActive ? '#FFFFFF' : theme.colors.textDark },
+                ]}
+              >
                 {name}
               </Text>
             </Pressable>
@@ -149,9 +164,20 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
             <Pressable
               key={wNum}
               onPress={() => onSelectWeek(wNum)}
-              style={[styles.weekTab, isAct && styles.weekTabActive]}
+              style={[
+                styles.weekTab,
+                {
+                  backgroundColor: isAct ? theme.colors.secondary : theme.colors.cardBackground,
+                  borderColor: isAct ? theme.colors.secondary : theme.colors.cardBorder,
+                },
+              ]}
             >
-              <Text style={[styles.weekTabText, isAct && styles.weekTabTextActive]}>
+              <Text
+                style={[
+                  styles.weekTabText,
+                  { color: isAct ? '#FFFFFF' : theme.colors.textDark },
+                ]}
+              >
                 Week {wNum}
               </Text>
             </Pressable>
@@ -161,22 +187,42 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
 
       <View style={styles.innerContent}>
         {/* Editable Week Of Header Input */}
-        <View style={styles.weekOfBar}>
-          <Text style={styles.weekOfLabel}>Week of:</Text>
+        <View
+          style={[
+            styles.weekOfBar,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <Text style={[styles.weekOfLabel, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+            Week of:
+          </Text>
           <TextInput
             value={currentWeekPlan.weekOf}
             onChangeText={handleUpdateWeekOf}
             placeholder="e.g. Jan 1 - Jan 7"
-            placeholderTextColor={THEME.colors.textLight}
-            style={styles.weekOfInput}
+            placeholderTextColor={theme.colors.textLight}
+            style={[styles.weekOfInput, { color: theme.colors.primary }]}
           />
         </View>
 
         {/* Top 3 Priorities */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Star size={17} color={THEME.colors.primary} fill={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>My top 3 priorities this week</Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, { borderBottomColor: theme.colors.linedPaper }]}>
+            <Star size={17} color={theme.colors.primary} fill={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              My top 3 priorities this week
+            </Text>
           </View>
           <View style={styles.list}>
             {currentWeekPlan.topPriorities.map((item, idx) => (
@@ -193,21 +239,33 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
         </View>
 
         {/* Days of Week */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <CalendarDays size={17} color={THEME.colors.secondary} />
-            <Text style={styles.cardTitle}>Daily agenda & reflections</Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, { borderBottomColor: theme.colors.linedPaper }]}>
+            <CalendarDays size={17} color={theme.colors.secondary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Daily agenda & reflections
+            </Text>
           </View>
           <View style={styles.daysContainer}>
             {daysList.map(({ key, label }) => (
-              <View key={key} style={styles.dayRow}>
-                <Text style={styles.dayLabel}>{label}</Text>
+              <View key={key} style={[styles.dayRow, { borderBottomColor: theme.colors.linedPaper }]}>
+                <Text style={[styles.dayLabel, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+                  {label}
+                </Text>
                 <TextInput
                   value={currentWeekPlan.days[key]}
                   onChangeText={(t) => handleDayChange(key, t)}
                   placeholder={`Daily actions or notes for ${label}...`}
-                  placeholderTextColor={THEME.colors.textLight}
-                  style={styles.dayInput}
+                  placeholderTextColor={theme.colors.textLight}
+                  style={[styles.dayInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
                   multiline={false}
                 />
               </View>
@@ -216,19 +274,29 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
         </View>
 
         {/* Carry Forward */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <ArrowRightLeft size={17} color={THEME.colors.textDark} />
-            <Text style={styles.cardTitle}>Carry forward</Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, { borderBottomColor: theme.colors.linedPaper }]}>
+            <ArrowRightLeft size={17} color={theme.colors.textDark} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Carry forward
+            </Text>
           </View>
           <TextInput
             value={currentWeekPlan.carryForward}
             onChangeText={handleCarryForwardChange}
             placeholder="Tasks or thoughts to carry into the next week..."
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={3}
-            style={styles.carryInput}
+            style={[styles.carryInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
       </View>
@@ -244,7 +312,6 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   content: {
     paddingBottom: 40,
@@ -258,21 +325,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  chipActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
   },
   chipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
   },
   weekTabRow: {
     flexDirection: 'row',
@@ -284,22 +341,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: THEME.radius.sm,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  weekTabActive: {
-    backgroundColor: THEME.colors.secondary,
-    borderColor: THEME.colors.secondary,
   },
   weekTabText: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  weekTabTextActive: {
-    color: '#FFFFFF',
   },
   innerContent: {
     paddingHorizontal: 16,
@@ -307,35 +354,27 @@ const styles = StyleSheet.create({
   weekOfBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     marginBottom: 12,
     gap: 8,
   },
   weekOfLabel: {
     fontSize: 14,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   weekOfInput: {
     flex: 1,
     fontSize: 14,
-    color: THEME.colors.primary,
     fontWeight: '600',
   },
   card: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 16,
     marginBottom: 14,
-    ...THEME.shadow,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -343,14 +382,11 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
     paddingBottom: 6,
   },
   cardTitle: {
     fontSize: 16,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   list: {
     gap: 2,
@@ -361,24 +397,19 @@ const styles = StyleSheet.create({
   dayRow: {
     paddingVertical: 4,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
   },
   dayLabel: {
     fontSize: 13,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
     marginBottom: 2,
   },
   dayInput: {
     fontSize: 13.5,
-    color: THEME.colors.textDark,
     paddingVertical: 2,
   },
   carryInput: {
     fontSize: 14,
     lineHeight: 22,
-    color: THEME.colors.textDark,
     minHeight: 60,
     textAlignVertical: 'top',
   },

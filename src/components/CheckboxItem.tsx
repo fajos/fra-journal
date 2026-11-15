@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TextInput, StyleSheet, Pressable } from 'react-native';
 import { Check } from 'lucide-react-native';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { hapticFeedback } from '../services/hapticsService';
 
 interface CheckboxItemProps {
@@ -21,16 +21,24 @@ export const CheckboxItem: React.FC<CheckboxItemProps> = ({
   placeholder = 'Write item...',
   onDelete,
 }) => {
+  const { theme } = useTheme();
+
   const handleToggle = () => {
     hapticFeedback.success();
     onToggle();
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderBottomColor: theme.colors.linedPaper }]}>
       <Pressable
         onPress={handleToggle}
-        style={[styles.checkbox, completed && styles.checkboxCompleted]}
+        style={[
+          styles.checkbox,
+          {
+            borderColor: completed ? theme.colors.checkboxChecked : theme.colors.checkboxBorder,
+            backgroundColor: completed ? theme.colors.checkboxChecked : theme.colors.cardBackground,
+          },
+        ]}
         hitSlop={8}
       >
         {completed && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
@@ -39,9 +47,13 @@ export const CheckboxItem: React.FC<CheckboxItemProps> = ({
         value={text}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={THEME.colors.textLight}
+        placeholderTextColor={theme.colors.textLight}
         style={[
           styles.input,
+          {
+            color: completed ? theme.colors.textLight : theme.colors.textDark,
+            fontFamily: theme.typography.fontFamilySans,
+          },
           completed && styles.inputCompleted,
         ]}
         multiline={false}
@@ -57,31 +69,21 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 5,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: THEME.colors.checkboxBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  checkboxCompleted: {
-    backgroundColor: THEME.colors.checkboxChecked,
-    borderColor: THEME.colors.checkboxChecked,
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: THEME.colors.textDark,
-    fontFamily: THEME.typography.fontFamilySans,
     paddingVertical: 4,
   },
   inputCompleted: {
     textDecorationLine: 'line-through',
-    color: THEME.colors.textLight,
   },
 });

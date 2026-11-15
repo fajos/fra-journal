@@ -5,10 +5,8 @@ import {
   StyleSheet,
   Modal,
   Pressable,
-  TextInput,
-  Platform,
 } from 'react-native';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import {
   scheduleMilestoneReminder,
   scheduleWeeklyPlanningCadence,
@@ -30,27 +28,27 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   milestoneTitle = 'Quarterly Milestone',
   goalArea = 'Personal growth',
 }) => {
+  const { theme } = useTheme();
   const [selectedOption, setSelectedOption] = useState<'1week' | 'endQuarter' | 'sunday' | 'monthEnd'>('1week');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const handleSchedule = async () => {
     hapticFeedback.medium();
-    let scheduledId: string | null = null;
     const now = new Date();
 
     if (selectedOption === '1week') {
       const target = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      scheduledId = await scheduleMilestoneReminder(milestoneTitle, goalArea, target);
+      await scheduleMilestoneReminder(milestoneTitle, goalArea, target);
       setStatusMessage('Reminder scheduled for 1 week from now!');
     } else if (selectedOption === 'endQuarter') {
       const target = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
-      scheduledId = await scheduleMilestoneReminder(milestoneTitle, goalArea, target);
+      await scheduleMilestoneReminder(milestoneTitle, goalArea, target);
       setStatusMessage('Reminder scheduled for Quarter Check-in!');
     } else if (selectedOption === 'sunday') {
-      scheduledId = await scheduleWeeklyPlanningCadence(19, 0);
+      await scheduleWeeklyPlanningCadence(19, 0);
       setStatusMessage('Sunday 7:00 PM weekly planning reminder activated!');
     } else if (selectedOption === 'monthEnd') {
-      scheduledId = await scheduleMonthlyReviewCadence(18, 0);
+      await scheduleMonthlyReviewCadence(18, 0);
       setStatusMessage('Month-end review reminder activated!');
     }
 
@@ -64,90 +62,105 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View
+          style={[
+            styles.modalCard,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Bell size={18} color={THEME.colors.primary} />
-              <Text style={styles.title}>Set Milestone Reminder</Text>
+              <Bell size={18} color={theme.colors.primary} />
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    color: theme.colors.textDark,
+                    fontFamily: theme.typography.fontFamilySerif,
+                  },
+                ]}
+              >
+                Set Milestone Reminder
+              </Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8}>
-              <X size={18} color={THEME.colors.textMuted} />
+              <X size={18} color={theme.colors.textMuted} />
             </Pressable>
           </View>
 
-          <View style={styles.contextBox}>
-            <Text style={styles.contextArea}>{goalArea}</Text>
-            <Text style={styles.contextTitle} numberOfLines={2}>
+          <View
+            style={[
+              styles.contextBox,
+              {
+                backgroundColor: theme.colors.primaryLight,
+                borderColor: theme.colors.cardBorder,
+              },
+            ]}
+          >
+            <Text style={[styles.contextArea, { color: theme.colors.primary }]}>{goalArea}</Text>
+            <Text style={[styles.contextTitle, { color: theme.colors.textDark }]} numberOfLines={2}>
               "{milestoneTitle}"
             </Text>
           </View>
 
           {statusMessage ? (
             <View style={styles.successBox}>
-              <Check size={16} color={THEME.colors.success} />
-              <Text style={styles.successText}>{statusMessage}</Text>
+              <Check size={16} color={theme.colors.success} />
+              <Text style={[styles.successText, { color: theme.colors.success }]}>{statusMessage}</Text>
             </View>
           ) : (
             <View style={styles.optionsList}>
-              <Pressable
-                onPress={() => setSelectedOption('1week')}
-                style={[styles.optionRow, selectedOption === '1week' && styles.optionRowActive]}
-              >
-                <Clock size={16} color={selectedOption === '1week' ? THEME.colors.primary : THEME.colors.textMuted} />
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionTitle, selectedOption === '1week' && styles.optionTitleActive]}>
-                    In 1 Week
-                  </Text>
-                  <Text style={styles.optionDesc}>Quick progress check on this milestone</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setSelectedOption('endQuarter')}
-                style={[styles.optionRow, selectedOption === 'endQuarter' && styles.optionRowActive]}
-              >
-                <Calendar size={16} color={selectedOption === 'endQuarter' ? THEME.colors.primary : THEME.colors.textMuted} />
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionTitle, selectedOption === 'endQuarter' && styles.optionTitleActive]}>
-                    Quarter Check-In
-                  </Text>
-                  <Text style={styles.optionDesc}>Milestone deadline review</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setSelectedOption('sunday')}
-                style={[styles.optionRow, selectedOption === 'sunday' && styles.optionRowActive]}
-              >
-                <Bell size={16} color={selectedOption === 'sunday' ? THEME.colors.primary : THEME.colors.textMuted} />
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionTitle, selectedOption === 'sunday' && styles.optionTitleActive]}>
-                    Recurring Sunday 7 PM
-                  </Text>
-                  <Text style={styles.optionDesc}>Weekly planning & priority setting prompt</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setSelectedOption('monthEnd')}
-                style={[styles.optionRow, selectedOption === 'monthEnd' && styles.optionRowActive]}
-              >
-                <Bell size={16} color={selectedOption === 'monthEnd' ? THEME.colors.primary : THEME.colors.textMuted} />
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionTitle, selectedOption === 'monthEnd' && styles.optionTitleActive]}>
-                    Month-End Reflection
-                  </Text>
-                  <Text style={styles.optionDesc}>Monthly review & carry-forward reminder</Text>
-                </View>
-              </Pressable>
+              {([
+                { key: '1week' as const, title: 'In 1 Week', desc: 'Quick progress check on this milestone', icon: Clock },
+                { key: 'endQuarter' as const, title: 'Quarter Check-In', desc: 'Milestone deadline review', icon: Calendar },
+                { key: 'sunday' as const, title: 'Recurring Sunday 7 PM', desc: 'Weekly planning & priority setting prompt', icon: Bell },
+                { key: 'monthEnd' as const, title: 'Month-End Reflection', desc: 'Monthly review & carry-forward reminder', icon: Bell },
+              ]).map(({ key, title, desc, icon: IconComponent }) => {
+                const isAct = selectedOption === key;
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => setSelectedOption(key)}
+                    style={[
+                      styles.optionRow,
+                      {
+                        backgroundColor: isAct ? theme.colors.primaryLight : theme.colors.cardBackground,
+                        borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
+                      },
+                    ]}
+                  >
+                    <IconComponent size={16} color={isAct ? theme.colors.primary : theme.colors.textMuted} />
+                    <View style={styles.optionContent}>
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          { color: isAct ? theme.colors.primary : theme.colors.textDark },
+                        ]}
+                      >
+                        {title}
+                      </Text>
+                      <Text style={[styles.optionDesc, { color: theme.colors.textMuted }]}>{desc}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           )}
 
           <View style={styles.buttonRow}>
-            <Pressable onPress={onClose} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
+            <Pressable
+              onPress={onClose}
+              style={[styles.cancelBtn, { borderColor: theme.colors.cardBorder }]}
+            >
+              <Text style={[styles.cancelBtnText, { color: theme.colors.textDark }]}>Cancel</Text>
             </Pressable>
-            <Pressable onPress={handleSchedule} style={styles.confirmBtn}>
+            <Pressable
+              onPress={handleSchedule}
+              style={[styles.confirmBtn, { backgroundColor: theme.colors.primary }]}
+            >
               <Bell size={14} color="#FFFFFF" />
               <Text style={styles.confirmBtnText}>Schedule Reminder</Text>
             </Pressable>
@@ -161,7 +174,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(40, 32, 28, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -169,12 +182,9 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: '#FFFFFF',
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 20,
-    ...THEME.shadow,
   },
   header: {
     flexDirection: 'row',
@@ -189,14 +199,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   contextBox: {
-    backgroundColor: '#FCFAF7',
     borderWidth: 1,
-    borderColor: THEME.colors.linedPaper,
     borderRadius: 8,
     padding: 10,
     marginBottom: 14,
@@ -204,12 +210,10 @@ const styles = StyleSheet.create({
   contextArea: {
     fontSize: 11,
     fontWeight: '700',
-    color: THEME.colors.primary,
     marginBottom: 2,
   },
   contextTitle: {
     fontSize: 13,
-    color: THEME.colors.textDark,
     fontStyle: 'italic',
   },
   optionsList: {
@@ -223,12 +227,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-    backgroundColor: '#FFFFFF',
-  },
-  optionRowActive: {
-    backgroundColor: THEME.colors.primaryLight,
-    borderColor: THEME.colors.primary,
   },
   optionContent: {
     flex: 1,
@@ -236,14 +234,9 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  optionTitleActive: {
-    color: THEME.colors.primary,
   },
   optionDesc: {
     fontSize: 11,
-    color: THEME.colors.textMuted,
     marginTop: 2,
   },
   successBox: {
@@ -259,7 +252,6 @@ const styles = StyleSheet.create({
   },
   successText: {
     fontSize: 13,
-    color: THEME.colors.success,
     fontWeight: '600',
     flex: 1,
   },
@@ -274,12 +266,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
   },
   cancelBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.colors.textDark,
   },
   confirmBtn: {
     flex: 1.5,
@@ -287,7 +277,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: THEME.colors.primary,
     paddingVertical: 10,
     borderRadius: 8,
   },

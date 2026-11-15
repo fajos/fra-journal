@@ -8,7 +8,7 @@ import {
   TextInput,
 } from 'react-native';
 import { JournalState, LifeArea, QuarterPlan } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
@@ -36,17 +36,18 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
   onSelectQuarter,
   onSelectMonth,
 }) => {
+  const { theme } = useTheme();
   const currentGoal = state.goals[selectedArea];
   if (!currentGoal) return null;
 
   const currentPlan: QuarterPlan = currentGoal.quarterPlans[selectedQuarter];
   if (!currentPlan) return null;
 
-  const handleUpdateTheme = (theme: string) => {
-    onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { theme }));
+  const handleUpdateTheme = (themeText: string) => {
+    onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { theme: themeText }));
   };
 
-  const startMonthIndex = (selectedQuarter - 1) * 3 + 1; // 1, 4, 7, 10
+  const startMonthIndex = (selectedQuarter - 1) * 3 + 1;
   const quarterMonthLabels = [
     { key: 'month1' as const, mIndex: startMonthIndex, label: MONTH_NAMES[startMonthIndex - 1] },
     { key: 'month2' as const, mIndex: startMonthIndex + 1, label: MONTH_NAMES[startMonthIndex] },
@@ -70,7 +71,10 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <FloralHeader
         title={`Quarter ${selectedQuarter} plan`}
         subtitle={`Goal: ${selectedArea}`}
@@ -92,9 +96,20 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
             <Pressable
               key={q}
               onPress={() => onSelectQuarter(q)}
-              style={[styles.quarterTab, isActive && styles.quarterTabActive]}
+              style={[
+                styles.quarterTab,
+                {
+                  backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
+                  borderColor: isActive ? theme.colors.primary : theme.colors.cardBorder,
+                },
+              ]}
             >
-              <Text style={[styles.quarterTabText, isActive && styles.quarterTabTextActive]}>
+              <Text
+                style={[
+                  styles.quarterTabText,
+                  { color: isActive ? '#FFFFFF' : theme.colors.textDark },
+                ]}
+              >
                 Quarter {q}
               </Text>
             </Pressable>
@@ -104,19 +119,29 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
 
       <View style={styles.innerContent}>
         {/* Quarter Theme */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Compass size={17} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>Quarter theme</Text>
+            <Compass size={17} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Quarter theme
+            </Text>
           </View>
           <TextInput
             value={currentPlan.theme}
             onChangeText={handleUpdateTheme}
             placeholder={`e.g. Focus theme for Q${selectedQuarter} (${selectedArea})...`}
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={2}
-            style={styles.themeInput}
+            style={[styles.themeInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
 
@@ -124,12 +149,21 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
         {quarterMonthLabels.map(({ key, mIndex, label }, mOrder) => {
           const items = currentPlan[key] || [];
           return (
-            <View key={key} style={styles.card}>
-              <View style={styles.monthHeaderRow}>
+            <View
+              key={key}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: theme.colors.cardBackground,
+                  borderColor: theme.colors.cardBorder,
+                },
+              ]}
+            >
+              <View style={[styles.monthHeaderRow, { borderBottomColor: theme.colors.linedPaper }]}>
                 <View style={styles.monthTitleArea}>
-                  <Calendar size={16} color={THEME.colors.secondary} />
-                  <Text style={styles.monthTitle}>
-                    Month {mOrder + 1} <Text style={styles.monthSubtitle}>({label})</Text>
+                  <Calendar size={16} color={theme.colors.secondary} />
+                  <Text style={[styles.monthTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+                    Month {mOrder + 1} <Text style={[styles.monthSubtitle, { color: theme.colors.textMuted }]}>({label})</Text>
                   </Text>
                 </View>
                 <Pressable
@@ -137,8 +171,8 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
                   style={styles.openMonthButton}
                   hitSlop={6}
                 >
-                  <Text style={styles.openMonthButtonText}>View Planner</Text>
-                  <ArrowRight size={12} color={THEME.colors.primary} />
+                  <Text style={[styles.openMonthButtonText, { color: theme.colors.primary }]}>View Planner</Text>
+                  <ArrowRight size={12} color={theme.colors.primary} />
                 </Pressable>
               </View>
 
@@ -170,7 +204,6 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   content: {
     paddingBottom: 40,
@@ -185,34 +218,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 9,
     alignItems: 'center',
-    borderRadius: THEME.radius.sm,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  quarterTabActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
   },
   quarterTabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  quarterTabTextActive: {
-    color: '#FFFFFF',
   },
   innerContent: {
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 16,
     marginBottom: 14,
-    ...THEME.shadow,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -222,14 +242,11 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   themeInput: {
     fontSize: 14,
     lineHeight: 22,
-    color: THEME.colors.textDark,
     minHeight: 46,
     textAlignVertical: 'top',
   },
@@ -239,7 +256,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
     paddingBottom: 6,
   },
   monthTitleArea: {
@@ -249,15 +265,11 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: 15,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   monthSubtitle: {
     fontSize: 13,
-    fontFamily: THEME.typography.fontFamilySans,
     fontWeight: '500',
-    color: THEME.colors.textMuted,
   },
   openMonthButton: {
     flexDirection: 'row',
@@ -267,7 +279,6 @@ const styles = StyleSheet.create({
   openMonthButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.colors.primary,
   },
   checkboxList: {
     gap: 2,

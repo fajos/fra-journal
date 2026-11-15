@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from 'react-native';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { Sparkles, X, ChevronRight } from 'lucide-react-native';
 import { hapticFeedback } from '../services/hapticsService';
 
@@ -44,6 +44,7 @@ export const ReflectivePromptsModal: React.FC<ReflectivePromptsModalProps> = ({
   contextType,
   onSelectPrompt,
 }) => {
+  const { theme } = useTheme();
   const prompts = PROMPTS_BY_TYPE[contextType] || PROMPTS_BY_TYPE.whyItMatters;
 
   const handleSelect = (text: string) => {
@@ -55,18 +56,36 @@ export const ReflectivePromptsModal: React.FC<ReflectivePromptsModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View
+          style={[
+            styles.modalCard,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Sparkles size={18} color={THEME.colors.primary} />
-              <Text style={styles.title}>Reflective Coaching Prompts</Text>
+              <Sparkles size={18} color={theme.colors.primary} />
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    color: theme.colors.textDark,
+                    fontFamily: theme.typography.fontFamilySerif,
+                  },
+                ]}
+              >
+                Reflective Coaching Prompts
+              </Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8}>
-              <X size={18} color={THEME.colors.textMuted} />
+              <X size={18} color={theme.colors.textMuted} />
             </Pressable>
           </View>
 
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
             Tap any prompt to inspire your reflection or append it directly:
           </Text>
 
@@ -75,16 +94,25 @@ export const ReflectivePromptsModal: React.FC<ReflectivePromptsModalProps> = ({
               <Pressable
                 key={idx}
                 onPress={() => handleSelect(p)}
-                style={styles.promptItem}
+                style={[
+                  styles.promptItem,
+                  {
+                    backgroundColor: theme.colors.primaryLight,
+                    borderColor: theme.colors.cardBorder,
+                  },
+                ]}
               >
-                <Text style={styles.promptText}>"{p}"</Text>
-                <ChevronRight size={14} color={THEME.colors.primary} />
+                <Text style={[styles.promptText, { color: theme.colors.textDark }]}>"{p}"</Text>
+                <ChevronRight size={14} color={theme.colors.primary} />
               </Pressable>
             ))}
           </ScrollView>
 
-          <Pressable onPress={onClose} style={styles.closeBtn}>
-            <Text style={styles.closeBtnText}>Done</Text>
+          <Pressable
+            onPress={onClose}
+            style={[styles.closeBtn, { backgroundColor: theme.colors.primaryLight }]}
+          >
+            <Text style={[styles.closeBtnText, { color: theme.colors.primary }]}>Done</Text>
           </Pressable>
         </View>
       </View>
@@ -95,7 +123,7 @@ export const ReflectivePromptsModal: React.FC<ReflectivePromptsModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(40, 32, 28, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -103,13 +131,10 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 440,
-    backgroundColor: '#FFFFFF',
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 20,
     maxHeight: '80%',
-    ...THEME.shadow,
   },
   header: {
     flexDirection: 'row',
@@ -124,13 +149,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   subtitle: {
     fontSize: 12.5,
-    color: THEME.colors.textMuted,
     fontStyle: 'italic',
     marginBottom: 12,
   },
@@ -142,16 +164,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FCFAF7',
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.linedPaper,
     marginBottom: 8,
   },
   promptText: {
     fontSize: 13,
-    color: THEME.colors.textDark,
     lineHeight: 19,
     flex: 1,
     paddingRight: 8,
@@ -160,12 +179,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    backgroundColor: THEME.colors.primaryLight,
     borderRadius: 8,
   },
   closeBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.colors.primary,
   },
 });

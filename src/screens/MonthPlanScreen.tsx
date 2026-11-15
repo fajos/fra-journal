@@ -8,7 +8,7 @@ import {
   TextInput,
 } from 'react-native';
 import { JournalState, LifeArea, MonthPlan } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
@@ -22,7 +22,7 @@ interface MonthPlanScreenProps {
   onUpdateState: (newState: JournalState) => void;
   selectedArea: LifeArea;
   onSelectArea: (area: LifeArea) => void;
-  selectedMonth: number; // 1 - 12
+  selectedMonth: number;
   onSelectMonth: (m: number) => void;
   onNavigateToWeek: (area: LifeArea, month: number, week: number) => void;
   onNavigateToReview: (area: LifeArea, month: number) => void;
@@ -38,6 +38,7 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
   onNavigateToWeek,
   onNavigateToReview,
 }) => {
+  const { theme } = useTheme();
   const currentGoal = state.goals[selectedArea];
   if (!currentGoal) return null;
 
@@ -73,7 +74,10 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <FloralHeader
         title={`Month ${MONTH_NAMES[selectedMonth - 1]}`}
         subtitle={`Goal: ${selectedArea}`}
@@ -100,9 +104,20 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
             <Pressable
               key={name}
               onPress={() => onSelectMonth(mIndex)}
-              style={[styles.monthChip, isActive && styles.monthChipActive]}
+              style={[
+                styles.monthChip,
+                {
+                  backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
+                  borderColor: isActive ? theme.colors.primary : theme.colors.cardBorder,
+                },
+              ]}
             >
-              <Text style={[styles.monthChipText, isActive && styles.monthChipTextActive]}>
+              <Text
+                style={[
+                  styles.monthChipText,
+                  { color: isActive ? '#FFFFFF' : theme.colors.textDark },
+                ]}
+              >
                 {name}
               </Text>
             </Pressable>
@@ -111,21 +126,37 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
       </ScrollView>
 
       {/* Weeks of this month selector bar */}
-      <View style={styles.weeksBox}>
+      <View
+        style={[
+          styles.weeksBox,
+          {
+            backgroundColor: theme.colors.cardBackground,
+            borderColor: theme.colors.cardBorder,
+          },
+        ]}
+      >
         <View style={styles.weeksHeader}>
-          <Clock size={15} color={THEME.colors.primary} />
-          <Text style={styles.weeksTitle}>Weekly Planners for {MONTH_NAMES[selectedMonth - 1]}</Text>
+          <Clock size={15} color={theme.colors.primary} />
+          <Text style={[styles.weeksTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+            Weekly Planners for {MONTH_NAMES[selectedMonth - 1]}
+          </Text>
         </View>
         <View style={styles.weekButtonsRow}>
           {([1, 2, 3, 4, 5] as const).map((wNum) => (
             <Pressable
               key={wNum}
               onPress={() => onNavigateToWeek(selectedArea, selectedMonth, wNum)}
-              style={styles.weekBtn}
+              style={[
+                styles.weekBtn,
+                {
+                  backgroundColor: theme.colors.primaryLight,
+                  borderColor: theme.colors.cardBorder,
+                },
+              ]}
               hitSlop={4}
             >
-              <Text style={styles.weekBtnLabel}>Week {wNum}</Text>
-              <ArrowRight size={11} color={THEME.colors.primary} />
+              <Text style={[styles.weekBtnLabel, { color: theme.colors.primary }]}>Week {wNum}</Text>
+              <ArrowRight size={11} color={theme.colors.primary} />
             </Pressable>
           ))}
         </View>
@@ -135,22 +166,38 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
       <View style={styles.reviewBanner}>
         <Pressable
           onPress={() => onNavigateToReview(selectedArea, selectedMonth)}
-          style={styles.reviewBtn}
+          style={[
+            styles.reviewBtn,
+            {
+              backgroundColor: theme.isDark ? '#23232A' : 'rgba(255, 255, 255, 0.7)',
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
         >
-          <RotateCcw size={15} color={THEME.colors.primary} />
-          <Text style={styles.reviewBtnText}>
+          <RotateCcw size={15} color={theme.colors.primary} />
+          <Text style={[styles.reviewBtnText, { color: theme.colors.primary }]}>
             Open Month in Review for {MONTH_NAMES[selectedMonth - 1]}
           </Text>
-          <ArrowRight size={14} color={THEME.colors.primary} />
+          <ArrowRight size={14} color={theme.colors.primary} />
         </Pressable>
       </View>
 
       <View style={styles.innerContent}>
         {/* Section 1: This month's key goals */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <CheckSquare size={17} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>This month's key goals</Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, { borderBottomColor: theme.colors.linedPaper }]}>
+            <CheckSquare size={17} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              This month's key goals
+            </Text>
           </View>
           <View style={styles.list}>
             {currentPlan.keyGoals.map((item, idx) => (
@@ -167,10 +214,20 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
         </View>
 
         {/* Section 2: To do */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <ListTodo size={17} color={THEME.colors.secondary} />
-            <Text style={styles.cardTitle}>To do</Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, { borderBottomColor: theme.colors.linedPaper }]}>
+            <ListTodo size={17} color={theme.colors.secondary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              To do
+            </Text>
           </View>
           <View style={styles.list}>
             {currentPlan.todos.map((item, idx) => (
@@ -187,19 +244,29 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
         </View>
 
         {/* Section 3: Notes */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <FileText size={17} color={THEME.colors.textDark} />
-            <Text style={styles.cardTitle}>Notes</Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={[styles.cardHeader, { borderBottomColor: theme.colors.linedPaper }]}>
+            <FileText size={17} color={theme.colors.textDark} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Notes
+            </Text>
           </View>
           <TextInput
             value={currentPlan.notes}
             onChangeText={handleNotesChange}
-            placeholder={`Jot down thoughts, milestones, or observations for ${MONTH_NAMES[selectedMonth - 1]} (${selectedArea})...`}
-            placeholderTextColor={THEME.colors.textLight}
+            placeholder={`Jot down thoughts or observations for ${MONTH_NAMES[selectedMonth - 1]} (${selectedArea})...`}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={4}
-            style={styles.notesInput}
+            style={[styles.notesInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
       </View>
@@ -215,7 +282,6 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   content: {
     paddingBottom: 40,
@@ -229,31 +295,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 7,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  monthChipActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
   },
   monthChipText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  monthChipTextActive: {
-    color: '#FFFFFF',
   },
   weeksBox: {
     marginHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 12,
     marginBottom: 10,
-    ...THEME.shadow,
   },
   weeksHeader: {
     flexDirection: 'row',
@@ -263,9 +316,7 @@ const styles = StyleSheet.create({
   },
   weeksTitle: {
     fontSize: 13,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   weekButtonsRow: {
     flexDirection: 'row',
@@ -277,16 +328,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-    backgroundColor: THEME.colors.primaryLight,
     paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E8D6DA',
   },
   weekBtnLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.colors.primary,
   },
   reviewBanner: {
     marginHorizontal: 16,
@@ -297,28 +345,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: THEME.radius.sm,
+    borderRadius: 8,
     paddingVertical: 9,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
   },
   reviewBtnText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: THEME.colors.primary,
   },
   innerContent: {
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 16,
     marginBottom: 14,
-    ...THEME.shadow,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -326,14 +368,11 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
     paddingBottom: 6,
   },
   cardTitle: {
     fontSize: 16,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   list: {
     gap: 2,
@@ -341,7 +380,6 @@ const styles = StyleSheet.create({
   notesInput: {
     fontSize: 14,
     lineHeight: 22,
-    color: THEME.colors.textDark,
     minHeight: 90,
     textAlignVertical: 'top',
   },

@@ -8,7 +8,7 @@ import {
   TextInput,
 } from 'react-native';
 import { JournalState, LifeArea, MonthReview } from '../types/journal';
-import { THEME } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';
 import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
@@ -41,6 +41,7 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
   selectedMonth,
   onSelectMonth,
 }) => {
+  const { theme } = useTheme();
   const currentGoal = state.goals[selectedArea];
   if (!currentGoal) return null;
 
@@ -106,7 +107,10 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <FloralHeader
         title="Month in review"
         subtitle={`Reviewing: ${MONTH_NAMES[selectedMonth - 1]}`}
@@ -133,9 +137,20 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
             <Pressable
               key={name}
               onPress={() => onSelectMonth(mIndex)}
-              style={[styles.monthChip, isActive && styles.monthChipActive]}
+              style={[
+                styles.monthChip,
+                {
+                  backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
+                  borderColor: isActive ? theme.colors.primary : theme.colors.cardBorder,
+                },
+              ]}
             >
-              <Text style={[styles.monthChipText, isActive && styles.monthChipTextActive]}>
+              <Text
+                style={[
+                  styles.monthChipText,
+                  { color: isActive ? '#FFFFFF' : theme.colors.textDark },
+                ]}
+              >
                 {name}
               </Text>
             </Pressable>
@@ -145,70 +160,142 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
 
       <View style={styles.innerContent}>
         {/* Section 1: What I achieved */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Trophy size={17} color={THEME.colors.secondary} />
-            <Text style={styles.cardTitle}>What I achieved</Text>
+            <Trophy size={17} color={theme.colors.secondary} />
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color: theme.colors.textDark,
+                  fontFamily: theme.typography.fontFamilySerif,
+                },
+              ]}
+            >
+              What I achieved
+            </Text>
           </View>
           <TextInput
             value={currentReview.whatIAchieved}
             onChangeText={handleUpdateAchieved}
             placeholder={`Celebrate milestones and habits achieved for ${selectedArea}...`}
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={3}
-            style={styles.textArea}
+            style={[styles.textArea, { color: theme.colors.textDark }]}
           />
         </View>
 
         {/* Section 2: What was left undone */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <AlertCircle size={17} color={THEME.colors.accentGold} />
-            <Text style={styles.cardTitle}>What was left undone</Text>
+            <AlertCircle size={17} color={theme.colors.accentGold} />
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color: theme.colors.textDark,
+                  fontFamily: theme.typography.fontFamilySerif,
+                },
+              ]}
+            >
+              What was left undone
+            </Text>
           </View>
           <TextInput
             value={currentReview.whatWasLeftUndone}
             onChangeText={handleUpdateUndone}
             placeholder="Acknowledge with self-compassion what didn't get finished..."
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={3}
-            style={styles.textArea}
+            style={[styles.textArea, { color: theme.colors.textDark }]}
           />
         </View>
 
         {/* Section 3: What got in the way */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <HelpCircle size={17} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>What got in the way</Text>
+            <HelpCircle size={17} color={theme.colors.primary} />
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color: theme.colors.textDark,
+                  fontFamily: theme.typography.fontFamilySerif,
+                },
+              ]}
+            >
+              What got in the way
+            </Text>
           </View>
           <TextInput
             value={currentReview.whatGotInTheWay}
             onChangeText={handleUpdateGotInTheWay}
             placeholder="Obstacles, energy dips, time crunches, or unclear priorities..."
-            placeholderTextColor={THEME.colors.textLight}
+            placeholderTextColor={theme.colors.textLight}
             multiline
             numberOfLines={3}
-            style={styles.textArea}
+            style={[styles.textArea, { color: theme.colors.textDark }]}
           />
         </View>
 
         {/* Section 4: What am I carrying forward to the next month */}
-        <View style={styles.card}>
-          <View style={styles.headerBetween}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={[styles.headerBetween, { borderBottomColor: theme.colors.linedPaper }]}>
             <View style={styles.cardHeader}>
-              <ArrowRightLeft size={17} color={THEME.colors.textDark} />
-              <Text style={styles.cardTitle}>What am I carrying forward to next month</Text>
+              <ArrowRightLeft size={17} color={theme.colors.textDark} />
+              <Text
+                style={[
+                  styles.cardTitle,
+                  {
+                    color: theme.colors.textDark,
+                    fontFamily: theme.typography.fontFamilySerif,
+                  },
+                ]}
+              >
+                What am I carrying forward to next month
+              </Text>
             </View>
             <Pressable
               onPress={handleAddCarryForwardItem}
-              style={styles.addItemBtn}
+              style={[styles.addItemBtn, { backgroundColor: theme.colors.primaryLight }]}
               hitSlop={6}
             >
-              <Plus size={14} color={THEME.colors.primary} />
-              <Text style={styles.addItemText}>Add</Text>
+              <Plus size={14} color={theme.colors.primary} />
+              <Text style={[styles.addItemText, { color: theme.colors.primary }]}>Add</Text>
             </Pressable>
           </View>
           <View style={styles.list}>
@@ -226,43 +313,91 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
         </View>
 
         {/* Section 5: Reflection */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Sparkles size={17} color={THEME.colors.primary} />
-            <Text style={styles.cardTitle}>Reflection</Text>
+            <Sparkles size={17} color={theme.colors.primary} />
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color: theme.colors.textDark,
+                  fontFamily: theme.typography.fontFamilySerif,
+                },
+              ]}
+            >
+              Reflection
+            </Text>
           </View>
 
           <View style={styles.reflectionRows}>
-            <View style={styles.reflectionField}>
-              <Text style={styles.reflectionLabel}>One win</Text>
+            <View style={[styles.reflectionField, { borderBottomColor: theme.colors.linedPaper }]}>
+              <Text
+                style={[
+                  styles.reflectionLabel,
+                  {
+                    color: theme.colors.primary,
+                    fontFamily: theme.typography.fontFamilySerif,
+                  },
+                ]}
+              >
+                One win
+              </Text>
               <TextInput
                 value={currentReview.reflection.oneWin}
                 onChangeText={(t) => updateReflection('oneWin', t)}
                 placeholder="The single victory I am most proud of in this area..."
-                placeholderTextColor={THEME.colors.textLight}
-                style={styles.singleLineInput}
+                placeholderTextColor={theme.colors.textLight}
+                style={[styles.singleLineInput, { color: theme.colors.textDark }]}
               />
             </View>
 
-            <View style={styles.reflectionField}>
-              <Text style={styles.reflectionLabel}>One lesson</Text>
+            <View style={[styles.reflectionField, { borderBottomColor: theme.colors.linedPaper }]}>
+              <Text
+                style={[
+                  styles.reflectionLabel,
+                  {
+                    color: theme.colors.primary,
+                    fontFamily: theme.typography.fontFamilySerif,
+                  },
+                ]}
+              >
+                One lesson
+              </Text>
               <TextInput
                 value={currentReview.reflection.oneLesson}
                 onChangeText={(t) => updateReflection('oneLesson', t)}
                 placeholder="The core insight I learned..."
-                placeholderTextColor={THEME.colors.textLight}
-                style={styles.singleLineInput}
+                placeholderTextColor={theme.colors.textLight}
+                style={[styles.singleLineInput, { color: theme.colors.textDark }]}
               />
             </View>
 
-            <View style={styles.reflectionField}>
-              <Text style={styles.reflectionLabel}>Grateful for</Text>
+            <View style={[styles.reflectionField, { borderBottomColor: theme.colors.linedPaper }]}>
+              <Text
+                style={[
+                  styles.reflectionLabel,
+                  {
+                    color: theme.colors.primary,
+                    fontFamily: theme.typography.fontFamilySerif,
+                  },
+                ]}
+              >
+                Grateful for
+              </Text>
               <TextInput
                 value={currentReview.reflection.gratefulFor}
                 onChangeText={(t) => updateReflection('gratefulFor', t)}
                 placeholder="What or who supported me in this journey..."
-                placeholderTextColor={THEME.colors.textLight}
-                style={styles.singleLineInput}
+                placeholderTextColor={theme.colors.textLight}
+                style={[styles.singleLineInput, { color: theme.colors.textDark }]}
               />
             </View>
           </View>
@@ -280,7 +415,6 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   content: {
     paddingBottom: 40,
@@ -294,33 +428,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 7,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
-  },
-  monthChipActive: {
-    backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
   },
   monthChipText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: THEME.colors.textDark,
-  },
-  monthChipTextActive: {
-    color: '#FFFFFF',
   },
   innerContent: {
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: THEME.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.colors.cardBorder,
     padding: 16,
     marginBottom: 14,
-    ...THEME.shadow,
   },
   headerBetween: {
     flexDirection: 'row',
@@ -328,7 +449,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
     paddingBottom: 6,
   },
   cardHeader: {
@@ -339,9 +459,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.textDark,
   },
   addItemBtn: {
     flexDirection: 'row',
@@ -349,18 +467,15 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: THEME.colors.primaryLight,
     borderRadius: 8,
   },
   addItemText: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.colors.primary,
   },
   textArea: {
     fontSize: 14,
     lineHeight: 22,
-    color: THEME.colors.textDark,
     minHeight: 60,
     textAlignVertical: 'top',
   },
@@ -373,19 +488,15 @@ const styles = StyleSheet.create({
   },
   reflectionField: {
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.linedPaper,
     paddingBottom: 6,
   },
   reflectionLabel: {
     fontSize: 13,
-    fontFamily: THEME.typography.fontFamilySerif,
     fontWeight: '700',
-    color: THEME.colors.primary,
     marginBottom: 2,
   },
   singleLineInput: {
     fontSize: 13.5,
-    color: THEME.colors.textDark,
     paddingVertical: 2,
   },
 });
