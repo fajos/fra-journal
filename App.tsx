@@ -19,7 +19,10 @@ import {
 } from './src/storage/journalStorage';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { JournalNavBar, TabKey } from './src/navigation/JournalNavBar';
-import { authenticateWithBiometrics } from './src/services/biometricsService';
+import {
+  authenticateWithBiometrics,
+  getBiometricLabel,
+} from './src/services/biometricsService';
 import { hapticFeedback } from './src/services/hapticsService';
 import { ShieldCheck, Lock } from 'lucide-react-native';
 
@@ -38,6 +41,7 @@ function AppContent() {
   const { theme, isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biometrics');
   const [state, setState] = useState<JournalState>(createInitialJournalState());
   const [currentTab, setCurrentTab] = useState<TabKey>('goals');
 
@@ -53,11 +57,14 @@ function AppContent() {
 
   useEffect(() => {
     async function initialize() {
+      const bioLabel = await getBiometricLabel();
+      setBiometricLabel(bioLabel);
+
       // Check biometric setting
       const bioPref = await AsyncStorage.getItem(BIOMETRIC_KEY);
       if (bioPref === 'true') {
         setLocked(true);
-        const success = await authenticateWithBiometrics('Unlock your journal');
+        const success = await authenticateWithBiometrics(`Unlock with ${bioLabel}`);
         if (success) {
           setLocked(false);
         }
@@ -123,11 +130,11 @@ function AppContent() {
           Journal Protected
         </Text>
         <Text style={[styles.lockedSubtitle, { color: theme.colors.textMuted }]}>
-          This private journal is locked with biometric security.
+          This private journal is locked with {biometricLabel}.
         </Text>
         <Pressable onPress={handleUnlock} style={[styles.unlockBtn, { backgroundColor: theme.colors.primary }]}>
           <ShieldCheck size={16} color="#FFFFFF" />
-          <Text style={styles.unlockBtnText}>Unlock with Biometrics</Text>
+          <Text style={styles.unlockBtnText}>Unlock with {biometricLabel}</Text>
         </Pressable>
       </View>
     );

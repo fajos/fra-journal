@@ -12,8 +12,31 @@ export async function isBiometricsAvailable(): Promise<boolean> {
   }
 }
 
+/**
+ * Returns a human-friendly name of the biometric modality supported by this device
+ * (e.g. 'Face ID', 'Touch ID', 'Fingerprint', 'Face Unlock').
+ */
+export async function getBiometricLabel(): Promise<string> {
+  if (Platform.OS === 'web') return 'Passcode';
+  try {
+    const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+      return Platform.OS === 'ios' ? 'Face ID' : 'Face Recognition';
+    }
+    if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+      return Platform.OS === 'ios' ? 'Touch ID' : 'Fingerprint';
+    }
+    if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+      return 'Iris Scanner';
+    }
+    return 'Passcode';
+  } catch {
+    return 'Biometrics';
+  }
+}
+
 export async function authenticateWithBiometrics(
-  promptMessage: string = 'Unlock your private journal'
+  customPromptMessage?: string
 ): Promise<boolean> {
   if (Platform.OS === 'web') return true;
 
@@ -21,11 +44,33 @@ export async function authenticateWithBiometrics(
     const isAvailable = await isBiometricsAvailable();
     if (!isAvailable) return true;
 
+    const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    const hasFace = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+    const hasFingerprint = types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+
+    let prompt = customPromptMessage;
+    if (!prompt) {
+      if (hasFace) {
+        prompt = Platform.OS === 'ios' ? 'Unlock with Face ID' : 'Unlock with Face Recognition';
+      } else if (hasFingerprint) {
+        prompt = Platform.OS === 'ios' ? 'Scan Touch ID to unlock' : 'Touch fingerprint sensor to unlock';
+      } else {
+        prompt = 'Unlock your private journal';
+      }
+    }
+
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage,
-      fallbackLabel: 'Use Passcode',
+      promptMessage: prompt,
+      promptSubtitle: 'Confirm biometric identity',
+      promptDescription: hasFace
+        ? 'Scan face or use sensor to unlock'
+        : 'Touch fingerprint sensor to unlock',
+      cancelLabel: 'Cancel',
+      fallbackLabel: 'Use PIN / Passcode',
       disableDeviceFallback: false,
+      biometricsSecurityLevel: 'weak', // Allows both Class 2 (camera face) and Class 3 (fingerprint/3D face) on Android
     });
+
     return result.success;
   } catch (e) {
     console.warn('Biometric authentication error:', e);

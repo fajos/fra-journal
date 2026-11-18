@@ -23,7 +23,11 @@ import {
   scheduleWeeklyPlanningCadence,
   scheduleMonthlyReviewCadence,
 } from '../services/notificationService';
-import { isBiometricsAvailable, authenticateWithBiometrics } from '../services/biometricsService';
+import {
+  isBiometricsAvailable,
+  authenticateWithBiometrics,
+  getBiometricLabel,
+} from '../services/biometricsService';
 import { exportJournalToPDF } from '../services/pdfExportService';
 import { hapticFeedback } from '../services/hapticsService';
 import {
@@ -63,6 +67,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   // Settings states
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biometrics');
   const [sundayCadence, setSundayCadence] = useState(true);
   const [monthEndCadence, setMonthEndCadence] = useState(true);
   const [customYearInput, setCustomYearInput] = useState('');
@@ -77,6 +82,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     async function checkPrefs() {
       const bioAvail = await isBiometricsAvailable();
       setBiometricsAvailable(bioAvail);
+      const label = await getBiometricLabel();
+      setBiometricLabel(label);
       const bioPref = await AsyncStorage.getItem(BIOMETRIC_KEY);
       if (bioPref === 'true') setBiometricEnabled(true);
 
@@ -449,7 +456,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Text>
 
           <View style={styles.switchRow}>
-            <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>Require Biometric Unlock</Text>
+            <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>
+              Require {biometricLabel} Unlock
+            </Text>
             <Switch
               value={biometricEnabled}
               onValueChange={handleToggleBiometrics}
