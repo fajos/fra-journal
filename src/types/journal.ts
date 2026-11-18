@@ -65,9 +65,35 @@ export interface CheckItem {
   completed: boolean;
 }
 
+export type DayKey =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+export interface DayDateInfo {
+  dayNumber: number;
+  monthShort: string;
+  formatted: string; // e.g. "Jan 5"
+  isCurrentMonth: boolean;
+}
+
+export interface MonthWeekInfo {
+  weekIndex: number; // 1 to 6
+  startDay: number;
+  endDay: number;
+  label: string;      // e.g. "Week 1 (Jan 1 - Jan 4)"
+  shortLabel: string; // e.g. "Jan 1 - 4"
+  dateRange: string;  // e.g. "Jan 1 - Jan 4, 2026"
+  days: Record<DayKey, DayDateInfo>;
+}
+
 export interface WeekPlan {
-  weekIndex: number; // 1 to 5 (e.g. Week 1, Week 2...)
-  weekOf: string;    // editable date label (e.g. "Jan 1 - Jan 7")
+  weekIndex: number; // 1 to 6 (exact weeks for month)
+  weekOf: string;    // editable date label (e.g. "Jan 1 - Jan 4, 2026")
   topPriorities: CheckItem[]; // Top 3 priorities for this week
   days: {
     monday: string;

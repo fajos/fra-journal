@@ -8,6 +8,9 @@ import {
   MonthReview,
   WeekPlan,
   GoalEntry,
+  MonthWeekInfo,
+  DayKey,
+  DayDateInfo,
 } from '../types/journal';
 
 const STORAGE_KEY = '@ejournal_state_v3';
@@ -26,6 +29,86 @@ export const MONTH_NAMES = [
   'November',
   'December',
 ];
+
+export const MONTH_NAMES_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+export const DAY_KEYS: DayKey[] = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+];
+
+/**
+ * Intelligent Calendar Engine:
+ * Calculates the exact weeks available for any month of any year,
+ * adhering to the Monday-to-Sunday planner structure shown in the physical journal.
+ * Handles 4-week months (e.g. Feb 2027), 5-week months, and 6-week months (e.g. Mar 2026, Aug 2026).
+ */
+export function getWeeksForMonth(year: number, monthIndex: number): MonthWeekInfo[] {
+  const totalDays = new Date(year, monthIndex, 0).getDate();
+  const weeks: MonthWeekInfo[] = [];
+  let currentDay = 1;
+  let weekIndex = 1;
+
+  while (currentDay <= totalDays) {
+    const curDate = new Date(year, monthIndex - 1, currentDay);
+    const jsDay = curDate.getDay();
+    const monBasedDay = jsDay === 0 ? 7 : jsDay; // 1=Mon..7=Sun
+    const daysUntilSunday = 7 - monBasedDay;
+    const endDay = Math.min(totalDays, currentDay + daysUntilSunday);
+
+    const mShort = MONTH_NAMES_SHORT[monthIndex - 1];
+    const startStr = `${mShort} ${currentDay}`;
+    const endStr = `${mShort} ${endDay}`;
+
+    // Monday date for full calendar week row
+    const mondayOffset = 1 - monBasedDay;
+    const mondayDate = new Date(year, monthIndex - 1, currentDay + mondayOffset);
+
+    const daysInfo = {} as Record<DayKey, DayDateInfo>;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + i);
+      const isCur = d.getMonth() === (monthIndex - 1) && d.getFullYear() === year;
+      daysInfo[DAY_KEYS[i]] = {
+        dayNumber: d.getDate(),
+        monthShort: MONTH_NAMES_SHORT[d.getMonth()],
+        formatted: `${MONTH_NAMES_SHORT[d.getMonth()]} ${d.getDate()}`,
+        isCurrentMonth: isCur,
+      };
+    }
+
+    weeks.push({
+      weekIndex,
+      startDay: currentDay,
+      endDay,
+      label: `Week ${weekIndex} (${startStr} - ${endStr})`,
+      shortLabel: `${startStr} - ${endDay}`,
+      dateRange: `${startStr} - ${endStr}, ${year}`,
+      days: daysInfo,
+    });
+
+    currentDay = endDay + 1;
+    weekIndex++;
+  }
+  return weeks;
+}
 
 /**
  * Returns a rolling 4-year window centered around the current calendar year.
@@ -119,33 +202,46 @@ export function createDefaultQuarterPlans(area: LifeArea): Record<1 | 2 | 3 | 4,
   };
 }
 
-export function createDefaultWeeks(): Record<number, WeekPlan> {
+export function createDefaultWeekPlan(year: number, monthIndex: number, weekIndex: number): WeekPlan {
+  const weeksInfo = getWeeksForMonth(year, monthIndex);
+  const info = weeksInfo.find((w) => w.weekIndex === weekIndex) || weeksInfo[0];
+  return {
+    weekIndex,
+    weekOf: info ? info.dateRange : `Week ${weekIndex}`,
+    topPriorities: [
+      { id: `w${weekIndex}_p1`, text: weekIndex === 1 ? 'Establish weekly schedule & block morning time' : '', completed: false },
+      { id: `w${weekIndex}_p2`, text: weekIndex === 1 ? 'Review goal milestones for this month' : '', completed: false },
+      { id: `w${weekIndex}_p3`, text: '', completed: false },
+    ],
+    days: {
+      monday: weekIndex === 1 ? 'Kickoff weekly focus & plan key milestones' : '',
+      tuesday: '',
+      wednesday: '',
+      thursday: '',
+      friday: '',
+      saturday: '',
+      sunday: weekIndex === 1 ? 'Weekly reflection & review upcoming week' : '',
+    },
+    carryForward: '',
+  };
+}
+
+export function createDefaultWeeks(
+  year: number = new Date().getFullYear(),
+  monthIndex: number = 1
+): Record<number, WeekPlan> {
+  const weeksInfo = getWeeksForMonth(year, monthIndex);
   const weeks: Record<number, WeekPlan> = {};
-  for (let w = 1; w <= 5; w++) {
-    weeks[w] = {
-      weekIndex: w,
-      weekOf: `Week ${w}`,
-      topPriorities: [
-        { id: `w${w}_p1`, text: w === 1 ? 'Establish weekly schedule & block morning time' : '', completed: false },
-        { id: `w${w}_p2`, text: w === 1 ? 'Review goal milestones for this month' : '', completed: false },
-        { id: `w${w}_p3`, text: '', completed: false },
-      ],
-      days: {
-        monday: w === 1 ? 'Kickoff weekly focus & plan key milestones' : '',
-        tuesday: '',
-        wednesday: '',
-        thursday: '',
-        friday: '',
-        saturday: '',
-        sunday: w === 1 ? 'Weekly reflection & review upcoming week' : '',
-      },
-      carryForward: '',
-    };
-  }
+  weeksInfo.forEach((info) => {
+    weeks[info.weekIndex] = createDefaultWeekPlan(year, monthIndex, info.weekIndex);
+  });
   return weeks;
 }
 
-export function createDefaultMonthPlans(area: LifeArea): Record<number, MonthPlan> {
+export function createDefaultMonthPlans(
+  area: LifeArea,
+  year: number = new Date().getFullYear()
+): Record<number, MonthPlan> {
   const monthPlans: Record<number, MonthPlan> = {};
   const isPersonalGrowth = area === 'Personal growth';
 
@@ -194,7 +290,7 @@ export function createDefaultMonthPlans(area: LifeArea): Record<number, MonthPla
           gratefulFor: isPersonalGrowth && m === 1 ? 'Quiet mornings and inspiring authors' : '',
         },
       },
-      weeks: createDefaultWeeks(),
+      weeks: createDefaultWeeks(year, m),
     };
   }
   return monthPlans;
@@ -231,7 +327,7 @@ export function createDefaultGoalsForYear(year: number): Record<LifeArea, GoalEn
       },
       supportNeeded: isSampleTop ? 'Accountability partner, quiet reading nook at home, library card' : '',
       quarterPlans: createDefaultQuarterPlans(item.key),
-      monthPlans: createDefaultMonthPlans(item.key),
+      monthPlans: createDefaultMonthPlans(item.key, year),
     };
   });
 
@@ -455,7 +551,9 @@ export function updateGoalWeek(
   const goal = state.goals[area];
   if (!goal) return state;
   const mPlan = goal.monthPlans[monthIndex];
-  const wPlan = mPlan.weeks[weekIndex];
+  if (!mPlan) return state;
+  const defaultWeek = createDefaultWeekPlan(state.year, monthIndex, weekIndex);
+  const wPlan = mPlan.weeks?.[weekIndex] || defaultWeek;
   const updatedGoals = {
     ...state.goals,
     [area]: {
@@ -465,7 +563,7 @@ export function updateGoalWeek(
         [monthIndex]: {
           ...mPlan,
           weeks: {
-            ...mPlan.weeks,
+            ...(mPlan.weeks || {}),
             [weekIndex]: {
               ...wPlan,
               ...updates,

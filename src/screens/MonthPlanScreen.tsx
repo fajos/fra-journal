@@ -14,7 +14,7 @@ import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { MONTH_NAMES, updateGoalMonth } from '../storage/journalStorage';
+import { MONTH_NAMES, updateGoalMonth, getWeeksForMonth } from '../storage/journalStorage';
 import { CheckSquare, ListTodo, FileText, ArrowRight, Clock, RotateCcw } from 'lucide-react-native';
 
 interface MonthPlanScreenProps {
@@ -138,14 +138,14 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
         <View style={styles.weeksHeader}>
           <Clock size={15} color={theme.colors.primary} />
           <Text style={[styles.weeksTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
-            Weekly Planners for {MONTH_NAMES[selectedMonth - 1]}
+            Weekly Planners for {MONTH_NAMES[selectedMonth - 1]} ({getWeeksForMonth(state.year, selectedMonth).length} weeks in {state.year})
           </Text>
         </View>
-        <View style={styles.weekButtonsRow}>
-          {([1, 2, 3, 4, 5] as const).map((wNum) => (
+        <View style={styles.weekButtonsGrid}>
+          {getWeeksForMonth(state.year, selectedMonth).map((wInfo) => (
             <Pressable
-              key={wNum}
-              onPress={() => onNavigateToWeek(selectedArea, selectedMonth, wNum)}
+              key={wInfo.weekIndex}
+              onPress={() => onNavigateToWeek(selectedArea, selectedMonth, wInfo.weekIndex)}
               style={[
                 styles.weekBtn,
                 {
@@ -155,7 +155,14 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
               ]}
               hitSlop={4}
             >
-              <Text style={[styles.weekBtnLabel, { color: theme.colors.primary }]}>Week {wNum}</Text>
+              <View style={styles.weekBtnContent}>
+                <Text style={[styles.weekBtnLabel, { color: theme.colors.primary }]}>
+                  Week {wInfo.weekIndex}
+                </Text>
+                <Text style={[styles.weekBtnDates, { color: theme.colors.textMuted }]}>
+                  {wInfo.shortLabel}
+                </Text>
+              </View>
               <ArrowRight size={11} color={theme.colors.primary} />
             </Pressable>
           ))}
@@ -169,7 +176,7 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
           style={[
             styles.reviewBtn,
             {
-              backgroundColor: theme.isDark ? '#23232A' : 'rgba(255, 255, 255, 0.7)',
+              backgroundColor: theme.colors.cardBackground,
               borderColor: theme.colors.cardBorder,
             },
           ]}
@@ -318,23 +325,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  weekButtonsRow: {
+  weekButtonsGrid: {
     flexDirection: 'row',
-    gap: 6,
+    flexWrap: 'wrap',
+    gap: 7,
   },
   weekBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '30%',
+    minWidth: 95,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 1,
   },
+  weekBtnContent: {
+    flexDirection: 'column',
+  },
   weekBtnLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  weekBtnDates: {
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 1,
   },
   reviewBanner: {
     marginHorizontal: 16,

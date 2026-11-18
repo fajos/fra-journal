@@ -15,6 +15,7 @@ import {
   loadJournalState,
   saveJournalState,
   createInitialJournalState,
+  getWeeksForMonth,
 } from './src/storage/journalStorage';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { JournalNavBar, TabKey } from './src/navigation/JournalNavBar';
@@ -93,6 +94,14 @@ function AppContent() {
     setCurrentTab(tab);
   };
 
+  const handleSelectMonth = (m: number) => {
+    setSelectedMonth(m);
+    const weeks = getWeeksForMonth(state.year, m);
+    if (selectedWeek > weeks.length) {
+      setSelectedWeek(weeks.length);
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
@@ -142,12 +151,12 @@ function AppContent() {
             }}
             onNavigateToMonth={(area, m) => {
               setSelectedArea(area);
-              setSelectedMonth(m);
+              handleSelectMonth(m);
               setCurrentTab('months');
             }}
             onNavigateToWeek={(area, m, w) => {
               setSelectedArea(area);
-              setSelectedMonth(m);
+              handleSelectMonth(m);
               setSelectedWeek(w);
               setCurrentTab('week');
             }}
@@ -178,7 +187,7 @@ function AppContent() {
             onSelectQuarter={setSelectedQuarter}
             onSelectMonth={(area, m) => {
               setSelectedArea(area);
-              setSelectedMonth(m);
+              handleSelectMonth(m);
               setCurrentTab('months');
             }}
           />
@@ -191,16 +200,16 @@ function AppContent() {
             selectedArea={selectedArea}
             onSelectArea={setSelectedArea}
             selectedMonth={selectedMonth}
-            onSelectMonth={setSelectedMonth}
+            onSelectMonth={handleSelectMonth}
             onNavigateToWeek={(area, m, w) => {
               setSelectedArea(area);
-              setSelectedMonth(m);
+              handleSelectMonth(m);
               setSelectedWeek(w);
               setCurrentTab('week');
             }}
             onNavigateToReview={(area, m) => {
               setSelectedArea(area);
-              setSelectedMonth(m);
+              handleSelectMonth(m);
               setCurrentTab('review');
             }}
           />
@@ -213,7 +222,7 @@ function AppContent() {
             selectedArea={selectedArea}
             onSelectArea={setSelectedArea}
             selectedMonth={selectedMonth}
-            onSelectMonth={setSelectedMonth}
+            onSelectMonth={handleSelectMonth}
             selectedWeek={selectedWeek}
             onSelectWeek={setSelectedWeek}
           />
@@ -226,7 +235,7 @@ function AppContent() {
             selectedArea={selectedArea}
             onSelectArea={setSelectedArea}
             selectedMonth={selectedMonth}
-            onSelectMonth={setSelectedMonth}
+            onSelectMonth={handleSelectMonth}
           />
         );
       case 'settings':
