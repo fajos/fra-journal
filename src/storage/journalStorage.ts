@@ -57,56 +57,85 @@ export const DAY_KEYS: DayKey[] = [
 
 /**
  * Intelligent Calendar Engine:
- * Calculates the exact weeks available for any month of any year,
- * adhering to the Monday-to-Sunday planner structure shown in the physical journal.
- * Handles 4-week months (e.g. Feb 2027), 5-week months, and 6-week months (e.g. Mar 2026, Aug 2026).
+ * In a physical weekly planner/journal, every week is ALWAYS a complete 7-day spread
+ * from Monday to Sunday (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday).
+ *
+ * To avoid partial 1-day/5-day fragments and duplicate overlapping weeks across months,
+ * we use the international calendar standard (ISO-8601 majority rule):
+ * - A full 7-day week belongs uniquely to the month that contains the majority of its days
+ *   (i.e. where Thursday falls).
+ * - For example, in 2026:
+ *   - The week Mon Oct 26 – Sun Nov 1 has 6 days in October and 1 in November (Thursday is Oct 29),
+ *     so it belongs uniquely to October as its 5th week.
+ *   - November starts cleanly on Monday Nov 2 (Week 1: Nov 2 – Nov 8) with ZERO overlap!
+ * - Every week is guaranteed full 7 days, and every month has either 4 or 5 complete weeks.
  */
 export function getWeeksForMonth(year: number, monthIndex: number): MonthWeekInfo[] {
-  const totalDays = new Date(year, monthIndex, 0).getDate();
   const weeks: MonthWeekInfo[] = [];
-  let currentDay = 1;
+
+  // Find the Monday of the week that contains the 1st of this month
+  const firstOfMonth = new Date(year, monthIndex - 1, 1);
+  const firstJsDay = firstOfMonth.getDay();
+  // Offset to preceding Monday (0=Sun -> -6, 1=Mon -> 0, etc.)
+  const diffToMonday = (firstJsDay === 0 ? -6 : 1) - firstJsDay;
+  let monday = new Date(year, monthIndex - 1, 1 + diffToMonday);
+
   let weekIndex = 1;
 
-  while (currentDay <= totalDays) {
-    const curDate = new Date(year, monthIndex - 1, currentDay);
-    const jsDay = curDate.getDay();
-    const monBasedDay = jsDay === 0 ? 7 : jsDay; // 1=Mon..7=Sun
-    const daysUntilSunday = 7 - monBasedDay;
-    const endDay = Math.min(totalDays, currentDay + daysUntilSunday);
+  while (true) {
+    const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3);
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
 
-    const mShort = MONTH_NAMES_SHORT[monthIndex - 1];
-    const startStr = `${mShort} ${currentDay}`;
-    const endStr = `${mShort} ${endDay}`;
+    const thursdayMonth = thursday.getMonth();
+    const thursdayYear = thursday.getFullYear();
 
-    // Monday date for full calendar week row
-    const mondayOffset = 1 - monBasedDay;
-    const mondayDate = new Date(year, monthIndex - 1, currentDay + mondayOffset);
+    // Check if the majority of this week (Thursday) belongs to this month
+    if (thursdayYear === year && thursdayMonth === (monthIndex - 1)) {
+      const monShort = MONTH_NAMES_SHORT[monday.getMonth()];
+      const sunShort = MONTH_NAMES_SHORT[sunday.getMonth()];
+      const monDay = monday.getDate();
+      const sunDay = sunday.getDate();
 
-    const daysInfo = {} as Record<DayKey, DayDateInfo>;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + i);
-      const isCur = d.getMonth() === (monthIndex - 1) && d.getFullYear() === year;
-      daysInfo[DAY_KEYS[i]] = {
-        dayNumber: d.getDate(),
-        monthShort: MONTH_NAMES_SHORT[d.getMonth()],
-        formatted: `${MONTH_NAMES_SHORT[d.getMonth()]} ${d.getDate()}`,
-        isCurrentMonth: isCur,
-      };
+      const startStr = `${monShort} ${monDay}`;
+      const endStr = `${sunShort} ${sunDay}`;
+      const shortRange =
+        monShort === sunShort ? `${monShort} ${monDay} – ${sunDay}` : `${startStr} – ${endStr}`;
+
+      const daysInfo = {} as Record<DayKey, DayDateInfo>;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+        const isCur = d.getMonth() === (monthIndex - 1) && d.getFullYear() === year;
+        daysInfo[DAY_KEYS[i]] = {
+          dayNumber: d.getDate(),
+          monthShort: MONTH_NAMES_SHORT[d.getMonth()],
+          formatted: `${MONTH_NAMES_SHORT[d.getMonth()]} ${d.getDate()}`,
+          isCurrentMonth: isCur,
+        };
+      }
+
+      weeks.push({
+        weekIndex,
+        startDay: monDay,
+        endDay: sunDay,
+        label: `Week ${weekIndex} (${shortRange})`,
+        shortLabel: shortRange,
+        dateRange: `${shortRange}, ${thursdayYear}`,
+        days: daysInfo,
+      });
+
+      weekIndex++;
+    } else if (
+      thursdayYear > year ||
+      (thursdayYear === year && thursdayMonth > (monthIndex - 1))
+    ) {
+      // Past all weeks assigned to this month
+      break;
     }
 
-    weeks.push({
-      weekIndex,
-      startDay: currentDay,
-      endDay,
-      label: `Week ${weekIndex} (${startStr} - ${endStr})`,
-      shortLabel: `${startStr} - ${endDay}`,
-      dateRange: `${startStr} - ${endStr}, ${year}`,
-      days: daysInfo,
-    });
-
-    currentDay = endDay + 1;
-    weekIndex++;
+    // Move to next Monday
+    monday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 7);
   }
+
   return weeks;
 }
 
