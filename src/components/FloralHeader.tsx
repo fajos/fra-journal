@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
-import { ChevronDown } from 'lucide-react-native';
+import { Calendar, ChevronDown } from 'lucide-react-native';
 
 interface FloralHeaderProps {
   title: string;
@@ -79,6 +79,9 @@ export const FloralHeader: React.FC<FloralHeaderProps> = ({
               ]}
               hitSlop={6}
             >
+              {onPressYear && (
+                <Calendar size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
+              )}
               <Text style={[styles.yearText, { color: theme.colors.primary }]}>{year}</Text>
               {onPressYear && (
                 <ChevronDown size={12} color={theme.colors.primary} style={{ marginLeft: 3 }} />

@@ -27,8 +27,6 @@ import {
   Layers,
   PieChart,
   LayoutGrid,
-  ChevronDown,
-  Plus,
   X,
   Archive,
 } from 'lucide-react-native';
@@ -60,7 +58,6 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
 
   const rollingYears = getRollingYears();
   const storedYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
-  const allSelectableYears = Array.from(new Set([...rollingYears, ...storedYears, state.year])).sort((a, b) => a - b);
   const archivedYears = storedYears.filter((y) => !rollingYears.includes(y)).sort((a, b) => b - a);
 
   const topThreeCount = Object.values(state.goals).filter((g) => g.isTopThree).length;
@@ -130,111 +127,6 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         year={state.year}
         onPressYear={() => setShowYearPickerModal(true)}
       />
-
-      {/* Homescreen Year Selector Strip */}
-      <View
-        style={[
-          styles.yearSelectorCard,
-          {
-            backgroundColor: theme.colors.cardBackground,
-            borderColor: theme.colors.cardBorder,
-          },
-        ]}
-      >
-        <View style={styles.yearSelectorHeader}>
-          <View style={styles.yearTitleGroup}>
-            <Calendar size={14} color={theme.colors.primary} />
-            <Text
-              style={[
-                styles.yearTitleText,
-                { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
-              ]}
-            >
-              Journal Year
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => setShowYearPickerModal(true)}
-            style={[styles.yearPickerModalBtn, { backgroundColor: theme.colors.primaryLight }]}
-            hitSlop={6}
-          >
-            <Text style={[styles.yearPickerModalBtnText, { color: theme.colors.primary }]}>
-              All Years
-            </Text>
-            <ChevronDown size={11} color={theme.colors.primary} />
-          </Pressable>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.yearChipsScroll}
-        >
-          {allSelectableYears.map((y) => {
-            const isActive = y === state.year;
-            const isCurrentCalYear = y === new Date().getFullYear();
-            return (
-              <Pressable
-                key={y}
-                onPress={() => handleSelectYear(y)}
-                style={[
-                  styles.yearChip,
-                  {
-                    backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
-                    borderColor: isActive ? theme.colors.primary : theme.colors.cardBorder,
-                  },
-                ]}
-                hitSlop={4}
-              >
-                <Text
-                  style={[
-                    styles.yearChipText,
-                    { color: isActive ? '#FFFFFF' : theme.colors.textDark },
-                  ]}
-                >
-                  {y}
-                </Text>
-                {isCurrentCalYear && (
-                  <View
-                    style={[
-                      styles.nowBadge,
-                      {
-                        backgroundColor: isActive
-                          ? 'rgba(255, 255, 255, 0.25)'
-                          : theme.colors.primaryLight,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.nowBadgeText,
-                        { color: isActive ? '#FFFFFF' : theme.colors.primary },
-                      ]}
-                    >
-                      Now
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-
-          <Pressable
-            onPress={() => setShowYearPickerModal(true)}
-            style={[
-              styles.addYearChip,
-              {
-                backgroundColor: theme.colors.primaryLight,
-                borderColor: theme.colors.cardBorder,
-              },
-            ]}
-            hitSlop={4}
-          >
-            <Plus size={12} color={theme.colors.primary} />
-            <Text style={[styles.addYearChipText, { color: theme.colors.primary }]}>Other</Text>
-          </Pressable>
-        </ScrollView>
-      </View>
 
       {/* Top Banner with View Switcher */}
       <View
@@ -583,79 +475,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
-  },
-  yearSelectorCard: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-  },
-  yearSelectorHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  yearTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  yearTitleText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  yearPickerModalBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  yearPickerModalBtnText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-  },
-  yearChipsScroll: {
-    gap: 8,
-    paddingVertical: 2,
-  },
-  yearChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 18,
-    borderWidth: 1,
-  },
-  yearChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  nowBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  nowBadgeText: {
-    fontSize: 9.5,
-    fontWeight: '700',
-  },
-  addYearChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 18,
-    borderWidth: 1,
-  },
-  addYearChipText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
