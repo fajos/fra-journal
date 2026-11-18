@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
+import { ChevronDown } from 'lucide-react-native';
 
 interface FloralHeaderProps {
   title: string;
   subtitle?: string;
   year?: number;
+  onPressYear?: () => void;
 }
 
 export const FloralFlower = ({ size = 28, color, opacity = 0.85 }: { size?: number; color?: string; opacity?: number }) => {
@@ -25,7 +27,12 @@ export const FloralFlower = ({ size = 28, color, opacity = 0.85 }: { size?: numb
   );
 };
 
-export const FloralHeader: React.FC<FloralHeaderProps> = ({ title, subtitle, year }) => {
+export const FloralHeader: React.FC<FloralHeaderProps> = ({
+  title,
+  subtitle,
+  year,
+  onPressYear,
+}) => {
   const { theme } = useTheme();
 
   return (
@@ -59,17 +66,24 @@ export const FloralHeader: React.FC<FloralHeaderProps> = ({ title, subtitle, yea
         </View>
         <View style={styles.decorArea}>
           {year ? (
-            <View
+            <Pressable
+              onPress={onPressYear}
+              disabled={!onPressYear}
               style={[
                 styles.yearBadge,
                 {
                   backgroundColor: theme.colors.primaryLight,
                   borderColor: theme.colors.cardBorder,
                 },
+                Boolean(onPressYear) && styles.yearBadgeInteractive,
               ]}
+              hitSlop={6}
             >
               <Text style={[styles.yearText, { color: theme.colors.primary }]}>{year}</Text>
-            </View>
+              {onPressYear && (
+                <ChevronDown size={12} color={theme.colors.primary} style={{ marginLeft: 3 }} />
+              )}
+            </Pressable>
           ) : null}
           <FloralFlower size={34} />
         </View>
@@ -114,6 +128,12 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  yearBadgeInteractive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
   yearText: {
     fontSize: 12,

@@ -6,6 +6,7 @@ import {
   ScrollView,
   TextInput,
   Pressable,
+  Modal,
   useWindowDimensions,
 } from 'react-native';
 import { LifeArea, LIFE_AREAS, JournalState } from '../types/journal';
@@ -17,6 +18,7 @@ import { LifeBalanceRadar } from '../components/LifeBalanceRadar';
 import { JOURNAL_QUOTES } from '../constants/quotes';
 import { getLifeAreaIcon } from '../components/GoalScopeHeader';
 import { hapticFeedback } from '../services/hapticsService';
+import { getRollingYears, switchJournalYear } from '../storage/journalStorage';
 import {
   CheckCircle2,
   Compass,
@@ -25,6 +27,10 @@ import {
   Layers,
   PieChart,
   LayoutGrid,
+  ChevronDown,
+  Plus,
+  X,
+  Archive,
 } from 'lucide-react-native';
 
 interface YearGoalsScreenProps {
@@ -49,7 +55,30 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<'cards' | 'radar'>('cards');
 
+  const [showYearPickerModal, setShowYearPickerModal] = useState(false);
+  const [customYearInput, setCustomYearInput] = useState('');
+
+  const rollingYears = getRollingYears();
+  const storedYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
+  const allSelectableYears = Array.from(new Set([...rollingYears, ...storedYears, state.year])).sort((a, b) => a - b);
+  const archivedYears = storedYears.filter((y) => !rollingYears.includes(y)).sort((a, b) => b - a);
+
   const topThreeCount = Object.values(state.goals).filter((g) => g.isTopThree).length;
+
+  const handleSelectYear = (targetYear: number) => {
+    hapticFeedback.selection();
+    const updated = switchJournalYear(state, targetYear);
+    onUpdateState(updated);
+    setShowYearPickerModal(false);
+  };
+
+  const handleAddCustomYear = () => {
+    const parsed = parseInt(customYearInput.trim(), 10);
+    if (!isNaN(parsed) && parsed >= 2000 && parsed <= 2100) {
+      handleSelectYear(parsed);
+      setCustomYearInput('');
+    }
+  };
 
   const handleTextChange = (area: LifeArea, text: string) => {
     const updatedGoals = {
@@ -99,7 +128,113 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         title="My goals for the year"
         subtitle="Circle your top three"
         year={state.year}
+        onPressYear={() => setShowYearPickerModal(true)}
       />
+
+      {/* Homescreen Year Selector Strip */}
+      <View
+        style={[
+          styles.yearSelectorCard,
+          {
+            backgroundColor: theme.colors.cardBackground,
+            borderColor: theme.colors.cardBorder,
+          },
+        ]}
+      >
+        <View style={styles.yearSelectorHeader}>
+          <View style={styles.yearTitleGroup}>
+            <Calendar size={14} color={theme.colors.primary} />
+            <Text
+              style={[
+                styles.yearTitleText,
+                { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
+              ]}
+            >
+              Journal Year
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => setShowYearPickerModal(true)}
+            style={[styles.yearPickerModalBtn, { backgroundColor: theme.colors.primaryLight }]}
+            hitSlop={6}
+          >
+            <Text style={[styles.yearPickerModalBtnText, { color: theme.colors.primary }]}>
+              All Years
+            </Text>
+            <ChevronDown size={11} color={theme.colors.primary} />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.yearChipsScroll}
+        >
+          {allSelectableYears.map((y) => {
+            const isActive = y === state.year;
+            const isCurrentCalYear = y === new Date().getFullYear();
+            return (
+              <Pressable
+                key={y}
+                onPress={() => handleSelectYear(y)}
+                style={[
+                  styles.yearChip,
+                  {
+                    backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
+                    borderColor: isActive ? theme.colors.primary : theme.colors.cardBorder,
+                  },
+                ]}
+                hitSlop={4}
+              >
+                <Text
+                  style={[
+                    styles.yearChipText,
+                    { color: isActive ? '#FFFFFF' : theme.colors.textDark },
+                  ]}
+                >
+                  {y}
+                </Text>
+                {isCurrentCalYear && (
+                  <View
+                    style={[
+                      styles.nowBadge,
+                      {
+                        backgroundColor: isActive
+                          ? 'rgba(255, 255, 255, 0.25)'
+                          : theme.colors.primaryLight,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.nowBadgeText,
+                        { color: isActive ? '#FFFFFF' : theme.colors.primary },
+                      ]}
+                    >
+                      Now
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+
+          <Pressable
+            onPress={() => setShowYearPickerModal(true)}
+            style={[
+              styles.addYearChip,
+              {
+                backgroundColor: theme.colors.primaryLight,
+                borderColor: theme.colors.cardBorder,
+              },
+            ]}
+            hitSlop={4}
+          >
+            <Plus size={12} color={theme.colors.primary} />
+            <Text style={[styles.addYearChipText, { color: theme.colors.primary }]}>Other</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
 
       {/* Top Banner with View Switcher */}
       <View
@@ -296,6 +431,148 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         quote={JOURNAL_QUOTES.yearGoals.text}
         author={JOURNAL_QUOTES.yearGoals.author}
       />
+
+      {/* Year Picker Modal */}
+      <Modal visible={showYearPickerModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: theme.colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <Calendar size={18} color={theme.colors.primary} />
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
+                  ]}
+                >
+                  Switch Journal Year
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowYearPickerModal(false)} hitSlop={8}>
+                <X size={18} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
+
+            <Text style={[styles.modalDesc, { color: theme.colors.textMuted }]}>
+              Select any year to review past journals or plan upcoming seasons:
+            </Text>
+
+            {/* Rolling 4 Years Section */}
+            <Text style={[styles.modalSectionLabel, { color: theme.colors.primary }]}>
+              Rolling 4-Year Window
+            </Text>
+            <View style={styles.modalGrid}>
+              {rollingYears.map((yr) => {
+                const isAct = yr === state.year;
+                const isNow = yr === new Date().getFullYear();
+                return (
+                  <Pressable
+                    key={yr}
+                    onPress={() => handleSelectYear(yr)}
+                    style={[
+                      styles.modalYearBtn,
+                      {
+                        backgroundColor: isAct ? theme.colors.primary : theme.colors.primaryLight,
+                        borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.modalYearBtnText,
+                        { color: isAct ? '#FFFFFF' : theme.colors.textDark },
+                      ]}
+                    >
+                      {yr}
+                    </Text>
+                    {isNow && (
+                      <Text
+                        style={[
+                          styles.modalNowText,
+                          { color: isAct ? '#FFFFFF' : theme.colors.primary },
+                        ]}
+                      >
+                        (Current)
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Archived Years Section (if any) */}
+            {archivedYears.length > 0 && (
+              <>
+                <View style={styles.modalArchiveHeader}>
+                  <Archive size={13} color={theme.colors.textMuted} />
+                  <Text style={[styles.modalSectionLabel, { color: theme.colors.textMuted }]}>
+                    Archived Journals
+                  </Text>
+                </View>
+                <View style={styles.modalGrid}>
+                  {archivedYears.map((yr) => (
+                    <Pressable
+                      key={yr}
+                      onPress={() => handleSelectYear(yr)}
+                      style={[
+                        styles.modalYearBtn,
+                        {
+                          backgroundColor:
+                            yr === state.year ? theme.colors.primary : theme.colors.linedPaper,
+                          borderColor: theme.colors.cardBorder,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.modalYearBtnText,
+                          { color: yr === state.year ? '#FFFFFF' : theme.colors.textDark },
+                        ]}
+                      >
+                        {yr}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Custom Year Input */}
+            <View style={[styles.customYearRow, { borderTopColor: theme.colors.linedPaper }]}>
+              <TextInput
+                value={customYearInput}
+                onChangeText={setCustomYearInput}
+                placeholder="Or enter year (e.g. 2029)..."
+                placeholderTextColor={theme.colors.textLight}
+                keyboardType="numeric"
+                maxLength={4}
+                style={[
+                  styles.customYearInput,
+                  {
+                    color: theme.colors.textDark,
+                    backgroundColor: theme.colors.primaryLight,
+                    borderColor: theme.colors.cardBorder,
+                  },
+                ]}
+              />
+              <Pressable
+                onPress={handleAddCustomYear}
+                style={[styles.jumpBtn, { backgroundColor: theme.colors.primary }]}
+              >
+                <Text style={styles.jumpBtnText}>Jump</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -306,6 +583,176 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+  },
+  yearSelectorCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+  },
+  yearSelectorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  yearTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  yearTitleText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  yearPickerModalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  yearPickerModalBtnText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  yearChipsScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  yearChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  yearChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  nowBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  nowBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+  },
+  addYearChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  addYearChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 440,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  modalSectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  modalYearBtn: {
+    flexGrow: 1,
+    flexBasis: '22%',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  modalYearBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalNowText: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  modalArchiveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 6,
+  },
+  customYearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 14,
+    borderTopWidth: 1,
+  },
+  customYearInput: {
+    flex: 1,
+    fontSize: 13.5,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+  },
+  jumpBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  jumpBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   topBanner: {
     marginHorizontal: 16,
