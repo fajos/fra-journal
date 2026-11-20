@@ -56,7 +56,14 @@ import {
   Globe,
   X,
   Trash2,
+  CloudDownload,
 } from 'lucide-react-native';
+import {
+  checkForAppUpdates,
+  getUpdatesStatus,
+  reloadAppAsync,
+  UpdateStatusInfo,
+} from '../services/updatesService';
 import { Modal, ActivityIndicator } from 'react-native';
 import {
   CloudUser,
@@ -106,6 +113,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [reminderFreq, setReminderFreq] = useState<'weekly' | 'daily' | 'monthly' | 'disabled'>('weekly');
   const [reminderDay, setReminderDay] = useState('Monday');
   const [reminderLoading, setReminderLoading] = useState(false);
+
+  // Over-The-Air Updates states
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatusInfo>(() => getUpdatesStatus());
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
 
   const rollingYears = getRollingYears();
   const allStoredYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
@@ -222,6 +234,25 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       hapticFeedback.success();
       showStatus('Annual Keepsake PDF generated successfully!');
     }
+  };
+
+  const handleCheckUpdates = async () => {
+    hapticFeedback.selection();
+    setCheckingUpdate(true);
+    const res = await checkForAppUpdates();
+    setCheckingUpdate(false);
+    if (res.isAvailable) {
+      setUpdateReady(true);
+      showStatus(res.message);
+    } else {
+      showStatus(res.message);
+    }
+    setUpdateStatus(getUpdatesStatus());
+  };
+
+  const handleApplyUpdate = async () => {
+    hapticFeedback.success();
+    await reloadAppAsync();
   };
 
   const handleSyncCloud = async () => {
@@ -947,6 +978,72 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           />
         </View>
 
+        {/* App Version & Over-The-Air Updates */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <CloudDownload size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              App Version & Updates
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Over-the-air updates ensure bug fixes, new features, and design improvements download instantly without waiting for App Store or Google Play releases.
+          </Text>
+
+          {/* Details Row: Version, Channel, OTA Status */}
+          <View style={[styles.updateDetailsBox, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.cardBorder }]}>
+            <View style={styles.updateDetailCol}>
+              <Text style={[styles.updateDetailLabel, { color: theme.colors.textMuted }]}>Version</Text>
+              <Text style={[styles.updateDetailVal, { color: theme.colors.textDark }]}>v1.0.0</Text>
+            </View>
+            <View style={styles.updateDetailCol}>
+              <Text style={[styles.updateDetailLabel, { color: theme.colors.textMuted }]}>Channel</Text>
+              <Text style={[styles.updateDetailVal, { color: theme.colors.primary, textTransform: 'capitalize' }]}>
+                {updateStatus.channel || (updateStatus.isEnabled ? 'Production' : 'Expo Go / Local')}
+              </Text>
+            </View>
+            <View style={styles.updateDetailCol}>
+              <Text style={[styles.updateDetailLabel, { color: theme.colors.textMuted }]}>OTA Sync</Text>
+              <Text style={[styles.updateDetailVal, { color: updateStatus.isEnabled ? '#16A34A' : theme.colors.textMuted }]}>
+                {updateStatus.isEnabled ? 'Active' : 'Standby'}
+              </Text>
+            </View>
+          </View>
+
+          {updateReady ? (
+            <Pressable
+              onPress={handleApplyUpdate}
+              style={[styles.buttonPrimary, { backgroundColor: '#16A34A', marginTop: 12 }]}
+            >
+              <RefreshCw size={15} color="#FFFFFF" />
+              <Text style={styles.buttonPrimaryText}>Restart App to Apply Update</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={handleCheckUpdates}
+              disabled={checkingUpdate}
+              style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, marginTop: 12 }]}
+            >
+              {checkingUpdate ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <RefreshCw size={14} color={theme.colors.primary} />
+              )}
+              <Text style={[styles.buttonSecondaryText, { color: theme.colors.primary }]}>
+                {checkingUpdate ? 'Checking for updates...' : 'Check for Updates'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
         {/* Reset */}
         <View
           style={[
@@ -1390,6 +1487,28 @@ const styles = StyleSheet.create({
   },
   deleteAccountBtnText: {
     color: '#DC2626',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  updateDetailsBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 6,
+  },
+  updateDetailCol: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  updateDetailLabel: {
+    fontSize: 11,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  updateDetailVal: {
     fontSize: 13,
     fontWeight: '700',
   },

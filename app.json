@@ -9,6 +9,15 @@
     "splash": {
       "backgroundColor": "#FAF7F2"
     },
+    "updates": {
+      "url": "https://u.expo.dev/cf324628-c896-4576-82b9-2bc0a446aa8f",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "bundleIdentifier": "com.fajostech.ejournal",
       "supportsTablet": true,
