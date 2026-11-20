@@ -2,9 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LifeArea, GoalEntry, CheckItem } from '../types/journal';
 import { getServerUrl } from './cloudSyncService';
 
-const AI_API_KEY_STORAGE = '@ejournal_ai_key';
-const AI_PROVIDER_STORAGE = '@ejournal_ai_provider';
-
 export interface DecomposedPlan {
   whyItMatters: string;
   supportNeeded: string;
@@ -44,54 +41,14 @@ export interface DecomposedPlan {
   source: 'deepseek' | 'openai' | 'smart-engine';
 }
 
-export async function getSavedAiApiKey(): Promise<string> {
-  try {
-    return (await AsyncStorage.getItem(AI_API_KEY_STORAGE)) || '';
-  } catch {
-    return '';
-  }
-}
-
-export async function setSavedAiApiKey(key: string): Promise<void> {
-  try {
-    await AsyncStorage.setItem(AI_API_KEY_STORAGE, key.trim());
-  } catch (err) {
-    console.error('Error saving AI key:', err);
-  }
-}
-
-export async function getSavedAiProvider(): Promise<'smart-engine' | 'deepseek' | 'openai'> {
-  try {
-    const prov = await AsyncStorage.getItem(AI_PROVIDER_STORAGE);
-    return (prov as any) || 'smart-engine';
-  } catch {
-    return 'smart-engine';
-  }
-}
-
-export async function setSavedAiProvider(prov: 'smart-engine' | 'deepseek' | 'openai'): Promise<void> {
-  try {
-    await AsyncStorage.setItem(AI_PROVIDER_STORAGE, prov);
-  } catch (err) {
-    console.error('Error saving AI provider:', err);
-  }
-}
-
-/**
- * Intelligent Decomposition Engine:
- * 1. Calls web backend API if online (supports DeepSeek / OpenAI / server keys).
- * 2. If offline or backend unreachable, executes built-in smart domain heuristics.
- */
 export async function decomposeGoal(
   area: LifeArea,
   goalText: string,
   year: number = 2026
 ): Promise<DecomposedPlan> {
   const cleanGoal = goalText.trim() || `Excel in ${area}`;
-  const customKey = await getSavedAiApiKey();
-  const provider = await getSavedAiProvider();
 
-  // Try calling backend API
+  // Try calling backend API where DEEPSEEK_API_KEY / OPENAI_API_KEY are configured in the environment
   try {
     const baseUrl = await getServerUrl();
     const res = await fetch(`${baseUrl}/api/journal/ai-decompose`, {
@@ -101,8 +58,6 @@ export async function decomposeGoal(
         area,
         goalText: cleanGoal,
         year,
-        customApiKey: customKey || undefined,
-        provider: provider === 'smart-engine' ? undefined : provider,
       }),
     });
 
@@ -113,7 +68,7 @@ export async function decomposeGoal(
       }
     }
   } catch {
-    // Fall back to local heuristics
+    // Fall back to local heuristics if server is offline or unreachable
   }
 
   return generateLocalSmartDecomposition(area, cleanGoal, year);

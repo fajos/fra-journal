@@ -15,10 +15,6 @@ import { LifeArea } from '../types/journal';
 import {
   DecomposedPlan,
   decomposeGoal,
-  getSavedAiApiKey,
-  setSavedAiApiKey,
-  getSavedAiProvider,
-  setSavedAiProvider,
 } from '../services/aiDecomposeService';
 import { hapticFeedback } from '../services/hapticsService';
 
@@ -41,20 +37,12 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const [goalText, setGoalText] = useState(initialGoalText);
-  const [provider, setProvider] = useState<'smart-engine' | 'deepseek' | 'openai'>('smart-engine');
-  const [apiKey, setApiKey] = useState('');
-  const [showKeyInput, setShowKeyInput] = useState(false);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<DecomposedPlan | null>(null);
 
   useEffect(() => {
     setGoalText(initialGoalText);
     setPlan(null);
-    getSavedAiApiKey().then((k) => {
-      setApiKey(k);
-      if (k) setShowKeyInput(true);
-    });
-    getSavedAiProvider().then((p) => setProvider(p));
   }, [visible, initialGoalText]);
 
   const handleRun = async () => {
@@ -62,11 +50,6 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
     hapticFeedback.medium();
     setLoading(true);
     setPlan(null);
-
-    if (apiKey) {
-      await setSavedAiApiKey(apiKey);
-    }
-    await setSavedAiProvider(provider);
 
     try {
       const res = await decomposeGoal(area, goalText, year);
@@ -144,69 +127,23 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
               ]}
             />
 
-            {/* Provider Selector */}
-            <View style={styles.providerRow}>
-              {[
-                { id: 'smart-engine', label: 'Smart Engine' },
-                { id: 'deepseek', label: 'DeepSeek AI' },
-                { id: 'openai', label: 'OpenAI' },
-              ].map((p) => {
-                const isAct = provider === p.id;
-                return (
-                  <Pressable
-                    key={p.id}
-                    onPress={() => {
-                      hapticFeedback.selection();
-                      setProvider(p.id as any);
-                      if (p.id !== 'smart-engine') setShowKeyInput(true);
-                    }}
-                    style={[
-                      styles.providerBtn,
-                      {
-                        backgroundColor: isAct ? theme.colors.primary : theme.colors.primaryLight,
-                        borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.providerBtnText,
-                        { color: isAct ? '#FFFFFF' : theme.colors.textDark },
-                      ]}
-                    >
-                      {p.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* Optional API Key Input */}
-            {showKeyInput && provider !== 'smart-engine' && (
-              <View style={styles.keyContainer}>
-                <View style={styles.keyLabelRow}>
-                  <Key size={12} color={theme.colors.textMuted} />
-                  <Text style={[styles.keyLabel, { color: theme.colors.textMuted }]}>
-                    {provider === 'deepseek' ? 'DeepSeek API Key' : 'OpenAI API Key'} (Optional)
-                  </Text>
-                </View>
-                <TextInput
-                  value={apiKey}
-                  onChangeText={setApiKey}
-                  placeholder="sk-..."
-                  placeholderTextColor={theme.colors.textLight}
-                  secureTextEntry
-                  style={[
-                    styles.keyInput,
-                    {
-                      color: theme.colors.textDark,
-                      backgroundColor: theme.colors.linedPaper,
-                      borderColor: theme.colors.cardBorder,
-                    },
-                  ]}
-                />
+            {/* AI Engine Status Badge */}
+            <View
+              style={[
+                styles.engineBadgeBox,
+                { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.cardBorder },
+              ]}
+            >
+              <Brain size={15} color="#D97706" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.engineBadgeTitle, { color: theme.colors.textDark }]}>
+                  Intelligent Cascading Decomposition
+                </Text>
+                <Text style={[styles.engineBadgeSub, { color: theme.colors.textMuted }]}>
+                  AI engine powered by background server environment
+                </Text>
               </View>
-            )}
+            </View>
 
             {/* Trigger Button */}
             <Pressable
@@ -353,42 +290,22 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 12,
   },
-  providerRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 10,
-  },
-  providerBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  providerBtnText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-  },
-  keyContainer: {
-    marginBottom: 10,
-  },
-  keyLabelRow: {
+  engineBadgeBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  keyLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  keyInput: {
-    borderRadius: 8,
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  engineBadgeTitle: {
     fontSize: 12,
+    fontWeight: '700',
+  },
+  engineBadgeSub: {
+    fontSize: 10.5,
+    marginTop: 1,
   },
   runBtn: {
     flexDirection: 'row',

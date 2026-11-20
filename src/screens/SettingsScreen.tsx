@@ -71,12 +71,6 @@ import {
   sendTestReminder,
   fetchReminderSettings,
 } from '../services/remindersService';
-import {
-  getSavedAiApiKey,
-  setSavedAiApiKey,
-  getSavedAiProvider,
-  setSavedAiProvider,
-} from '../services/aiDecomposeService';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
 const CADENCE_SUNDAY_KEY = '@ejournal_cadence_sunday';
@@ -120,10 +114,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [reminderDay, setReminderDay] = useState('Monday');
   const [reminderLoading, setReminderLoading] = useState(false);
 
-  // AI settings
-  const [aiProvider, setAiProviderState] = useState<'smart-engine' | 'deepseek' | 'openai'>('smart-engine');
-  const [aiApiKey, setAiApiKeyState] = useState('');
-
   const rollingYears = getRollingYears();
   const allStoredYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
   const archivedYears = allStoredYears
@@ -149,11 +139,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setCloudUser(user);
       const url = await getServerUrl();
       setLocalServerUrl(url);
-
-      const aiKey = await getSavedAiApiKey();
-      setAiApiKeyState(aiKey);
-      const prov = await getSavedAiProvider();
-      setAiProviderState(prov);
 
       if (user) {
         const rem = await fetchReminderSettings();
@@ -312,13 +297,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const res = await sendTestReminder();
     setReminderLoading(false);
     showStatus(res.message);
-  };
-
-  const handleSaveAiSettings = async () => {
-    hapticFeedback.selection();
-    await setSavedAiApiKey(aiApiKey);
-    await setSavedAiProvider(aiProvider);
-    showStatus('AI settings saved!');
   };
 
   const handleExport = () => {
@@ -870,72 +848,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <View style={styles.cardHeader}>
             <Sparkles size={18} color="#D97706" />
             <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
-              AI Goal Decomposition Engine
+              AI Goal Decomposition
             </Text>
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Configure the AI provider used when auto-splitting yearly goals into quarterly milestones, monthly targets, and weekly plans.
+            Intelligently cascades your yearly goals into quarterly milestones, monthly targets, and 7-day weekly habits.
           </Text>
 
-          <View style={styles.chipRow}>
-            {[
-              { id: 'smart-engine', label: 'Smart Engine (Offline)' },
-              { id: 'deepseek', label: 'DeepSeek AI' },
-              { id: 'openai', label: 'OpenAI' },
-            ].map((p) => {
-              const isAct = aiProvider === p.id;
-              return (
-                <Pressable
-                  key={p.id}
-                  onPress={() => setAiProviderState(p.id as any)}
-                  style={[
-                    styles.chipBtn,
-                    {
-                      backgroundColor: isAct ? theme.colors.primary : theme.colors.primaryLight,
-                      borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.chipBtnText, { color: isAct ? '#FFFFFF' : theme.colors.textDark }]}>
-                    {p.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {aiProvider !== 'smart-engine' && (
-            <View style={{ marginTop: 10 }}>
-              <Text style={[styles.switchSub, { color: theme.colors.textMuted, marginBottom: 4 }]}>
-                {aiProvider === 'deepseek' ? 'DeepSeek' : 'OpenAI'} API Key:
-              </Text>
-              <TextInput
-                value={aiApiKey}
-                onChangeText={setAiApiKeyState}
-                placeholder="sk-..."
-                placeholderTextColor={theme.colors.textLight}
-                secureTextEntry
-                style={[
-                  styles.keyInputSmall,
-                  {
-                    color: theme.colors.textDark,
-                    backgroundColor: theme.colors.primaryLight,
-                    borderColor: theme.colors.cardBorder,
-                  },
-                ]}
-              />
-            </View>
-          )}
-
-          <Pressable
-            onPress={handleSaveAiSettings}
-            style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, marginTop: 12 }]}
-          >
-            <Check size={14} color={theme.colors.textDark} />
-            <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>
-              Save AI Settings
+          <View style={[styles.statusBox, { backgroundColor: theme.colors.primaryLight, marginBottom: 0 }]}>
+            <Sparkles size={15} color="#D97706" />
+            <Text style={[styles.statusText, { color: theme.colors.textDark }]}>
+              Powered by server environment variables (DeepSeek / OpenAI on Vercel) with instant offline fallback.
             </Text>
-          </Pressable>
+          </View>
         </View>
 
         {/* Backup & Restore */}
