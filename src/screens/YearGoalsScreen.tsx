@@ -29,7 +29,10 @@ import {
   LayoutGrid,
   X,
   Archive,
+  Sparkles,
 } from 'lucide-react-native';
+import { AiDecomposeModal } from '../components/AiDecomposeModal';
+import { applyDecompositionToGoal, DecomposedPlan } from '../services/aiDecomposeService';
 
 interface YearGoalsScreenProps {
   state: JournalState;
@@ -55,6 +58,27 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
 
   const [showYearPickerModal, setShowYearPickerModal] = useState(false);
   const [customYearInput, setCustomYearInput] = useState('');
+
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiTargetArea, setAiTargetArea] = useState<LifeArea>('Health and wellbeing');
+
+  const handleApplyDecomposition = (plan: DecomposedPlan) => {
+    const current = state.goals[aiTargetArea];
+    if (!current) return;
+    const updated = applyDecompositionToGoal(current, plan);
+    const updatedGoals = {
+      ...state.goals,
+      [aiTargetArea]: updated,
+    };
+    onUpdateState({
+      ...state,
+      goals: updatedGoals,
+      yearsData: {
+        ...(state.yearsData || {}),
+        [state.year]: updatedGoals,
+      },
+    });
+  };
 
   const rollingYears = getRollingYears();
   const storedYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
@@ -256,6 +280,27 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                   isTopThree={goal.isTopThree}
                   onToggleTopThree={() => handleToggleTopThree(item.key)}
                 />
+
+                {/* AI Decomposition Action Pill */}
+                <Pressable
+                  onPress={() => {
+                    setAiTargetArea(item.key);
+                    setShowAiModal(true);
+                  }}
+                  style={[
+                    styles.aiDecomposeBtn,
+                    {
+                      backgroundColor: theme.colors.primaryLight,
+                      borderColor: theme.colors.cardBorder,
+                    },
+                  ]}
+                  hitSlop={4}
+                >
+                  <Sparkles size={12} color="#D97706" />
+                  <Text style={[styles.aiDecomposeBtnText, { color: theme.colors.textDark }]}>
+                    ✨ Auto-Decompose with AI
+                  </Text>
+                </Pressable>
 
                 {/* Navigation Action Pills for this Goal */}
                 <View style={[styles.actionPillsRow, { borderTopColor: theme.colors.linedPaper }]}>
@@ -465,6 +510,16 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* AI Decomposition Modal */}
+      <AiDecomposeModal
+        visible={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        area={aiTargetArea}
+        initialGoalText={state.goals[aiTargetArea]?.text || ''}
+        year={state.year}
+        onApply={handleApplyDecomposition}
+      />
     </ScrollView>
   );
 };
@@ -475,6 +530,21 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+  },
+  aiDecomposeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  aiDecomposeBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,

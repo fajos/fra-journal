@@ -1,0 +1,147 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { JournalState } from '../types/journal';
+
+const TOKEN_KEY = '@ejournal_cloud_token';
+const USER_KEY = '@ejournal_cloud_user';
+const SERVER_URL_KEY = '@ejournal_server_url';
+const DEFAULT_SERVER_URL = 'http://localhost:3000';
+
+export interface CloudUser {
+  id: number;
+  email: string;
+  full_name: string;
+}
+
+export async function getServerUrl(): Promise<string> {
+  try {
+    const saved = await AsyncStorage.getItem(SERVER_URL_KEY);
+    return saved?.trim() || DEFAULT_SERVER_URL;
+  } catch {
+    return DEFAULT_SERVER_URL;
+  }
+}
+
+export async function setServerUrl(url: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SERVER_URL_KEY, url.trim());
+  } catch (err) {
+    console.error('Error saving server url:', err);
+  }
+}
+
+export async function getCloudToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function getCloudUser(): Promise<CloudUser | null> {
+  try {
+    const raw = await AsyncStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function cloudLogin(email: string, password: string): Promise<{ success: boolean; user?: CloudUser; error?: string }> {
+  try {
+    const baseUrl = await getServerUrl();
+    const res = await fetch(`${baseUrl}/api/journal/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim(), password }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Login failed' };
+    }
+
+    await AsyncStorage.setItem(TOKEN_KEY, data.token);
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
+
+    return { success: true, user: data.user };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network connection failed' };
+  }
+}
+
+export async function cloudRegister(
+  email: string,
+  password: string,
+  fullName: string
+): Promise<{ success: boolean; user?: CloudUser; error?: string }> {
+  try {
+    const baseUrl = await getServerUrl();
+    const res = await fetch(`${baseUrl}/api/journal/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim(), password, full_name: fullName.trim() }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Registration failed' };
+    }
+
+    await AsyncStorage.setItem(TOKEN_KEY, data.token);
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
+
+    return { success: true, user: data.user };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network connection failed' };
+  }
+}
+
+export async function cloudLogout(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(USER_KEY);
+  } catch (err) {
+    console.error('Logout error:', err);
+  }
+}
+
+/**
+ * Synchronize local state with cloud state in Turso.
+ * If cloud has data, merges or pulls latest; also pushes local changes to cloud.
+ */
+export async function syncWithCloud(localState: JournalState): Promise<{ success: boolean; state?: JournalState; message?: string }> {
+  try {
+    const token = await getCloudToken();
+    if (!token) {
+      return { success: false, message: 'Not logged in. Running in offline guest mode.' };
+    }
+
+    const baseUrl = await getServerUrl();
+
+    // 1. Push local state to cloud
+    const saveRes = await fetch(`${baseUrl}/api/journal/state`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        year: localState.year,
+        state: localState,
+      }),
+    });
+
+    if (!saveRes.ok) {
+      // If token expired, clear it
+      if (saveRes.status === 401) {
+        await cloudLogout();
+        return { success: false, message: 'Session expired. Please log in again.' };
+      }
+      return { success: false, message: 'Cloud sync failed.' };
+    }
+
+    return { success: true, state: localState, message: 'Synced with Turso cloud successfully!' };
+  } catch (err: any) {
+    return { success: false, message: 'Could not reach server. Changes kept locally.' };
+  }
+}

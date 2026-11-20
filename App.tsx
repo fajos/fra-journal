@@ -24,6 +24,7 @@ import {
   getBiometricLabel,
 } from './src/services/biometricsService';
 import { hapticFeedback } from './src/services/hapticsService';
+import { syncWithCloud, getCloudToken } from './src/services/cloudSyncService';
 import { ShieldCheck, Lock } from 'lucide-react-native';
 
 // Screens
@@ -72,6 +73,11 @@ function AppContent() {
 
       const loaded = await loadJournalState();
       setState(loaded);
+      getCloudToken().then((tok) => {
+        if (tok) {
+          syncWithCloud(loaded).catch(() => {});
+        }
+      });
       setLoading(false);
     }
     initialize();
@@ -93,6 +99,7 @@ function AppContent() {
     }
     saveTimeoutRef.current = setTimeout(() => {
       saveJournalState(newState);
+      syncWithCloud(newState).catch(() => {});
     }, 500);
   };
 

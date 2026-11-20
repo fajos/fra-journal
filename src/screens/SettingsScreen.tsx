@@ -45,7 +45,38 @@ import {
   Sun,
   Moon,
   Feather,
+  Cloud,
+  RefreshCw,
+  LogIn,
+  LogOut,
+  Mail,
+  Sparkles,
+  Key,
+  Globe,
+  X,
 } from 'lucide-react-native';
+import { Modal, ActivityIndicator } from 'react-native';
+import {
+  CloudUser,
+  getCloudUser,
+  cloudLogin,
+  cloudRegister,
+  cloudLogout,
+  syncWithCloud,
+  getServerUrl,
+  setServerUrl,
+} from '../services/cloudSyncService';
+import {
+  saveReminderSettings,
+  sendTestReminder,
+  fetchReminderSettings,
+} from '../services/remindersService';
+import {
+  getSavedAiApiKey,
+  setSavedAiApiKey,
+  getSavedAiProvider,
+  setSavedAiProvider,
+} from '../services/aiDecomposeService';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
 const CADENCE_SUNDAY_KEY = '@ejournal_cadence_sunday';
@@ -72,6 +103,27 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [monthEndCadence, setMonthEndCadence] = useState(true);
   const [customYearInput, setCustomYearInput] = useState('');
 
+  // Cloud & Sync states
+  const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
+  const [serverUrl, setLocalServerUrl] = useState('http://localhost:3000');
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authFullName, setAuthFullName] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  // Email Reminders states
+  const [reminderFreq, setReminderFreq] = useState<'weekly' | 'daily' | 'monthly' | 'disabled'>('weekly');
+  const [reminderDay, setReminderDay] = useState('Monday');
+  const [reminderLoading, setReminderLoading] = useState(false);
+
+  // AI settings
+  const [aiProvider, setAiProviderState] = useState<'smart-engine' | 'deepseek' | 'openai'>('smart-engine');
+  const [aiApiKey, setAiApiKeyState] = useState('');
+
   const rollingYears = getRollingYears();
   const allStoredYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
   const archivedYears = allStoredYears
@@ -92,6 +144,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
       const monthPref = await AsyncStorage.getItem(CADENCE_MONTH_KEY);
       if (monthPref !== null) setMonthEndCadence(monthPref === 'true');
+
+      const user = await getCloudUser();
+      setCloudUser(user);
+      const url = await getServerUrl();
+      setLocalServerUrl(url);
+
+      const aiKey = await getSavedAiApiKey();
+      setAiApiKeyState(aiKey);
+      const prov = await getSavedAiProvider();
+      setAiProviderState(prov);
+
+      if (user) {
+        const rem = await fetchReminderSettings();
+        if (rem) {
+          setReminderFreq(rem.frequency);
+          setReminderDay(rem.day_of_week || 'Monday');
+        }
+      }
     }
     checkPrefs();
   }, []);
@@ -168,6 +238,87 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       hapticFeedback.success();
       showStatus('Annual Keepsake PDF generated successfully!');
     }
+  };
+
+  const handleSyncCloud = async () => {
+    hapticFeedback.medium();
+    setSyncLoading(true);
+    const res = await syncWithCloud(state);
+    setSyncLoading(false);
+    if (res.success) {
+      hapticFeedback.success();
+      showStatus(res.message || 'Synced with Turso cloud successfully!');
+    } else {
+      hapticFeedback.error();
+      showStatus(res.message || 'Cloud sync failed.');
+    }
+  };
+
+  const handleCloudAuth = async () => {
+    setAuthLoading(true);
+    setAuthError('');
+    if (authMode === 'login') {
+      const res = await cloudLogin(authEmail, authPassword);
+      setAuthLoading(false);
+      if (res.success && res.user) {
+        setCloudUser(res.user);
+        setShowAuthModal(false);
+        hapticFeedback.success();
+        showStatus(`Logged in as ${res.user.email}!`);
+        await syncWithCloud(state);
+      } else {
+        setAuthError(res.error || 'Login failed');
+      }
+    } else {
+      const res = await cloudRegister(authEmail, authPassword, authFullName);
+      setAuthLoading(false);
+      if (res.success && res.user) {
+        setCloudUser(res.user);
+        setShowAuthModal(false);
+        hapticFeedback.success();
+        showStatus(`Account created for ${res.user.email}!`);
+        await syncWithCloud(state);
+      } else {
+        setAuthError(res.error || 'Registration failed');
+      }
+    }
+  };
+
+  const handleCloudLogout = async () => {
+    hapticFeedback.selection();
+    await cloudLogout();
+    setCloudUser(null);
+    showStatus('Logged out of cloud account.');
+  };
+
+  const handleSaveReminderSettings = async () => {
+    hapticFeedback.selection();
+    setReminderLoading(true);
+    const res = await saveReminderSettings({
+      frequency: reminderFreq,
+      day_of_week: reminderDay,
+    });
+    setReminderLoading(false);
+    if (res.success) {
+      showStatus('Email reminder preferences saved!');
+    } else {
+      showStatus(res.message || 'Failed to save reminders.');
+    }
+  };
+
+  const handleSendTestReminder = async () => {
+    hapticFeedback.medium();
+    setReminderLoading(true);
+    const res = await sendTestReminder();
+    setReminderLoading(false);
+    showStatus(res.message);
+  };
+
+  const handleSaveAiSettings = async () => {
+    hapticFeedback.selection();
+    await setSavedAiApiKey(aiApiKey);
+    await setSavedAiProvider(aiProvider);
+    showStatus('AI settings saved!');
   };
 
   const handleExport = () => {
@@ -543,6 +694,250 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Pressable>
         </View>
 
+        {/* Cloud Account & Turso Storage Sync */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <Cloud size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Cloud Account & Turso Storage
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Sync your journal with the web app so your goals, quarters, and weeks are always up to date across all your devices.
+          </Text>
+
+          <View style={[styles.statusBox, { backgroundColor: cloudUser ? theme.colors.primaryLight : theme.colors.linedPaper, marginBottom: 12 }]}>
+            <Cloud size={15} color={cloudUser ? theme.colors.primary : theme.colors.textMuted} />
+            <Text style={[styles.statusText, { color: cloudUser ? theme.colors.primary : theme.colors.textDark, flex: 1 }]}>
+              {cloudUser ? `Signed in as ${cloudUser.email}` : 'Running in Offline Guest Mode'}
+            </Text>
+            {cloudUser && (
+              <Pressable onPress={handleCloudLogout} hitSlop={6}>
+                <LogOut size={14} color={theme.colors.danger} />
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.buttonRow}>
+            {cloudUser ? (
+              <Pressable
+                onPress={handleSyncCloud}
+                disabled={syncLoading}
+                style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1 }]}
+              >
+                {syncLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <RefreshCw size={14} color="#FFFFFF" />
+                )}
+                <Text style={styles.buttonPrimaryText}>Sync to Cloud Now</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => setShowAuthModal(true)}
+                style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1 }]}
+              >
+                <LogIn size={14} color="#FFFFFF" />
+                <Text style={styles.buttonPrimaryText}>Log In / Create Account</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Server URL Config */}
+          <View style={{ marginTop: 12 }}>
+            <Text style={[styles.switchSub, { color: theme.colors.textMuted, marginBottom: 4 }]}>
+              Web App / Backend Server URL:
+            </Text>
+            <TextInput
+              value={serverUrl}
+              onChangeText={(t) => {
+                setLocalServerUrl(t);
+                setServerUrl(t);
+              }}
+              placeholder="http://localhost:3000"
+              placeholderTextColor={theme.colors.textLight}
+              style={[
+                styles.keyInputSmall,
+                {
+                  color: theme.colors.textDark,
+                  backgroundColor: theme.colors.primaryLight,
+                  borderColor: theme.colors.cardBorder,
+                },
+              ]}
+            />
+          </View>
+        </View>
+
+        {/* Email Goal Reminders Card */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <Mail size={18} color="#D97706" />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Email Goal Reminders
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Receive periodic email check-ins with your Top 3 yearly goals, weekly habit focus, and personal reflection link.
+          </Text>
+
+          {/* Frequency Chips */}
+          <Text style={[styles.switchSub, { color: theme.colors.textMuted, marginBottom: 6 }]}>
+            Delivery Frequency:
+          </Text>
+          <View style={styles.chipRow}>
+            {[
+              { id: 'weekly', label: 'Weekly' },
+              { id: 'monthly', label: 'Monthly' },
+              { id: 'daily', label: 'Daily' },
+              { id: 'disabled', label: 'Off' },
+            ].map((f) => {
+              const isAct = reminderFreq === f.id;
+              return (
+                <Pressable
+                  key={f.id}
+                  onPress={() => setReminderFreq(f.id as any)}
+                  style={[
+                    styles.chipBtn,
+                    {
+                      backgroundColor: isAct ? theme.colors.primary : theme.colors.primaryLight,
+                      borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.chipBtnText, { color: isAct ? '#FFFFFF' : theme.colors.textDark }]}>
+                    {f.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.buttonRow}>
+            <Pressable
+              onPress={handleSaveReminderSettings}
+              disabled={reminderLoading}
+              style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, flex: 1 }]}
+            >
+              <Check size={14} color={theme.colors.textDark} />
+              <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>
+                Save Preferences
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSendTestReminder}
+              disabled={reminderLoading || !cloudUser}
+              style={[
+                styles.buttonPrimary,
+                { backgroundColor: '#D97706', flex: 1, opacity: !cloudUser ? 0.6 : 1 },
+              ]}
+            >
+              {reminderLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Mail size={14} color="#FFFFFF" />
+              )}
+              <Text style={styles.buttonPrimaryText}>Send Test Email</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* AI Goal Decomposition Settings */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <Sparkles size={18} color="#D97706" />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              AI Goal Decomposition Engine
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Configure the AI provider used when auto-splitting yearly goals into quarterly milestones, monthly targets, and weekly plans.
+          </Text>
+
+          <View style={styles.chipRow}>
+            {[
+              { id: 'smart-engine', label: 'Smart Engine (Offline)' },
+              { id: 'deepseek', label: 'DeepSeek AI' },
+              { id: 'openai', label: 'OpenAI' },
+            ].map((p) => {
+              const isAct = aiProvider === p.id;
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => setAiProviderState(p.id as any)}
+                  style={[
+                    styles.chipBtn,
+                    {
+                      backgroundColor: isAct ? theme.colors.primary : theme.colors.primaryLight,
+                      borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.chipBtnText, { color: isAct ? '#FFFFFF' : theme.colors.textDark }]}>
+                    {p.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {aiProvider !== 'smart-engine' && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={[styles.switchSub, { color: theme.colors.textMuted, marginBottom: 4 }]}>
+                {aiProvider === 'deepseek' ? 'DeepSeek' : 'OpenAI'} API Key:
+              </Text>
+              <TextInput
+                value={aiApiKey}
+                onChangeText={setAiApiKeyState}
+                placeholder="sk-..."
+                placeholderTextColor={theme.colors.textLight}
+                secureTextEntry
+                style={[
+                  styles.keyInputSmall,
+                  {
+                    color: theme.colors.textDark,
+                    backgroundColor: theme.colors.primaryLight,
+                    borderColor: theme.colors.cardBorder,
+                  },
+                ]}
+              />
+            </View>
+          )}
+
+          <Pressable
+            onPress={handleSaveAiSettings}
+            style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, marginTop: 12 }]}
+          >
+            <Check size={14} color={theme.colors.textDark} />
+            <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>
+              Save AI Settings
+            </Text>
+          </Pressable>
+        </View>
+
         {/* Backup & Restore */}
         <View
           style={[
@@ -623,6 +1018,132 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Pressable>
         </View>
       </View>
+
+      {/* Cloud Auth Modal */}
+      <Modal visible={showAuthModal} transparent animationType="fade" onRequestClose={() => setShowAuthModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.authCard,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: theme.colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.authModalHeader}>
+              <View style={styles.authTitleRow}>
+                <Cloud size={18} color={theme.colors.primary} />
+                <Text
+                  style={[
+                    styles.authTitle,
+                    { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
+                  ]}
+                >
+                  {authMode === 'login' ? 'Sign In to Your Journal' : 'Create Cloud Journal Account'}
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowAuthModal(false)} hitSlop={8}>
+                <X size={18} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
+
+            {authError ? (
+              <View style={[styles.statusBox, { backgroundColor: '#FDE8E8', borderColor: '#F8B4B4', marginBottom: 10 }]}>
+                <Text style={[styles.statusText, { color: '#C81E1E' }]}>{authError}</Text>
+              </View>
+            ) : null}
+
+            {authMode === 'register' && (
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: theme.colors.textDark }]}>Full Name</Text>
+                <TextInput
+                  value={authFullName}
+                  onChangeText={setAuthFullName}
+                  placeholder="Your full name"
+                  placeholderTextColor={theme.colors.textLight}
+                  style={[
+                    styles.textInputFull,
+                    {
+                      color: theme.colors.textDark,
+                      backgroundColor: theme.colors.primaryLight,
+                      borderColor: theme.colors.cardBorder,
+                    },
+                  ]}
+                />
+              </View>
+            )}
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.colors.textDark }]}>Email Address</Text>
+              <TextInput
+                value={authEmail}
+                onChangeText={setAuthEmail}
+                placeholder="name@example.com"
+                placeholderTextColor={theme.colors.textLight}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={[
+                  styles.textInputFull,
+                  {
+                    color: theme.colors.textDark,
+                    backgroundColor: theme.colors.primaryLight,
+                    borderColor: theme.colors.cardBorder,
+                  },
+                ]}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.colors.textDark }]}>Password</Text>
+              <TextInput
+                value={authPassword}
+                onChangeText={setAuthPassword}
+                placeholder="••••••••"
+                placeholderTextColor={theme.colors.textLight}
+                secureTextEntry
+                style={[
+                  styles.textInputFull,
+                  {
+                    color: theme.colors.textDark,
+                    backgroundColor: theme.colors.primaryLight,
+                    borderColor: theme.colors.cardBorder,
+                  },
+                ]}
+              />
+            </View>
+
+            <Pressable
+              onPress={handleCloudAuth}
+              disabled={authLoading}
+              style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, marginTop: 12 }]}
+            >
+              {authLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <LogIn size={15} color="#FFFFFF" />
+              )}
+              <Text style={styles.buttonPrimaryText}>
+                {authMode === 'login' ? 'Sign In & Sync' : 'Create Account & Sync'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setAuthMode(authMode === 'login' ? 'register' : 'login');
+                setAuthError('');
+              }}
+              style={{ marginTop: 12, alignItems: 'center' }}
+            >
+              <Text style={{ fontSize: 12, color: theme.colors.primary, fontWeight: '600' }}>
+                {authMode === 'login'
+                  ? "Don't have an account? Create one"
+                  : 'Already have an account? Sign In'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -876,5 +1397,75 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
+  },
+  keyInputSmall: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    fontSize: 12,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  chipBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  authCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 18,
+  },
+  authModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  authTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  authTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  inputGroup: {
+    marginBottom: 10,
+  },
+  inputLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  textInputFull: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
   },
 });
