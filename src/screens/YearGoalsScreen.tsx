@@ -110,21 +110,25 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   };
 
   const handleApplyDecomposition = (plan: DecomposedPlan) => {
-    const current = state.goals[aiTargetArea];
-    if (!current) return;
-    const updated = applyDecompositionToGoal(current, plan, state.year);
-    const updatedGoals = {
-      ...state.goals,
-      [aiTargetArea]: updated,
-    };
-    onUpdateState({
-      ...state,
-      goals: updatedGoals,
-      yearsData: {
-        ...(state.yearsData || {}),
-        [state.year]: updatedGoals,
-      },
-    });
+    try {
+      const current = state.goals[aiTargetArea];
+      if (!current) return;
+      const updated = applyDecompositionToGoal(current, plan, state.year);
+      const updatedGoals = {
+        ...state.goals,
+        [aiTargetArea]: updated,
+      };
+      onUpdateState({
+        ...state,
+        goals: updatedGoals,
+        yearsData: {
+          ...(state.yearsData || {}),
+          [state.year]: updatedGoals,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to apply decomposition in YearGoalsScreen:', err);
+    }
   };
 
   const rollingYears = getRollingYears();

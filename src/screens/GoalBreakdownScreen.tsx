@@ -60,20 +60,25 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
   const [showAiModal, setShowAiModal] = useState(false);
 
   const handleApplyDecomposition = (plan: DecomposedPlan) => {
-    if (!currentGoal) return;
-    const updated = applyDecompositionToGoal(currentGoal, plan, state.year);
-    const updatedGoals = {
-      ...state.goals,
-      [selectedArea]: updated,
-    };
-    onUpdateState({
-      ...state,
-      goals: updatedGoals,
-      yearsData: {
-        ...(state.yearsData || {}),
-        [state.year]: updatedGoals,
-      },
-    });
+    try {
+      const current = currentGoal || state.goals[selectedArea];
+      if (!current) return;
+      const updated = applyDecompositionToGoal(current, plan, state.year);
+      const updatedGoals = {
+        ...state.goals,
+        [selectedArea]: updated,
+      };
+      onUpdateState({
+        ...state,
+        goals: updatedGoals,
+        yearsData: {
+          ...(state.yearsData || {}),
+          [state.year]: updatedGoals,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to apply decomposition in GoalBreakdownScreen:', err);
+    }
   };
 
   const currentGoal = state.goals[selectedArea];

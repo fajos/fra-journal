@@ -410,18 +410,20 @@ export function applyDecompositionToGoal(
   plan: DecomposedPlan,
   year: number = 2026
 ): GoalEntry {
+  const safeYear = Number(year) || new Date().getFullYear();
+  const safeMilestones = goal?.milestones || { q1: '', q2: '', q3: '', q4: '' };
   const updated: GoalEntry = {
     ...goal,
-    whyItMatters: plan.whyItMatters || goal.whyItMatters,
-    supportNeeded: plan.supportNeeded || goal.supportNeeded,
+    whyItMatters: plan.whyItMatters || goal?.whyItMatters || '',
+    supportNeeded: plan.supportNeeded || goal?.supportNeeded || '',
     milestones: {
-      q1: plan.milestones?.q1 || goal.milestones.q1,
-      q2: plan.milestones?.q2 || goal.milestones.q2,
-      q3: plan.milestones?.q3 || goal.milestones.q3,
-      q4: plan.milestones?.q4 || goal.milestones.q4,
+      q1: plan.milestones?.q1 || safeMilestones.q1 || '',
+      q2: plan.milestones?.q2 || safeMilestones.q2 || '',
+      q3: plan.milestones?.q3 || safeMilestones.q3 || '',
+      q4: plan.milestones?.q4 || safeMilestones.q4 || '',
     },
-    quarterPlans: { ...goal.quarterPlans },
-    monthPlans: { ...goal.monthPlans },
+    quarterPlans: { ...(goal?.quarterPlans || {}) },
+    monthPlans: { ...(goal?.monthPlans || {}) },
   };
 
   // Quarters
@@ -444,8 +446,24 @@ export function applyDecompositionToGoal(
   if (plan.monthPlans) {
     for (let m = 1; m <= 12; m++) {
       const mp = plan.monthPlans[m];
-      if (mp && updated.monthPlans[m]) {
-        const monthWeeks = getWeeksForMonth(year, m);
+      if (mp) {
+        const currentMonth = updated.monthPlans[m] || {
+          monthIndex: m,
+          monthName: MONTH_NAMES[m - 1],
+          keyGoals: [],
+          todos: [],
+          notes: '',
+          review: {
+            whatIAchieved: '',
+            whatWasLeftUndone: '',
+            whatGotInTheWay: '',
+            carryForwardItems: [],
+            reflection: { oneWin: '', oneLesson: '', gratefulFor: '' },
+          },
+          weeks: {},
+        };
+
+        const monthWeeks = getWeeksForMonth(safeYear, m);
         const populatedWeeks: Record<number, any> = {};
 
         monthWeeks.forEach((wInfo) => {
@@ -468,7 +486,7 @@ export function applyDecompositionToGoal(
               carryForward: dw.carryForward || '',
             };
           } else {
-            populatedWeeks[w] = updated.monthPlans[m].weeks?.[w] || {
+            populatedWeeks[w] = currentMonth.weeks?.[w] || {
               weekIndex: w,
               weekOf: `Week ${w} (${wInfo.shortLabel})`,
               topPriorities: [],
@@ -479,10 +497,10 @@ export function applyDecompositionToGoal(
         });
 
         updated.monthPlans[m] = {
-          ...updated.monthPlans[m],
+          ...currentMonth,
           keyGoals: (mp.keyGoals || []).map((t, i) => ({ id: `kg-${m}-${i}`, text: t, completed: false })),
           todos: (mp.todos || []).map((t, i) => ({ id: `td-${m}-${i}`, text: t, completed: false })),
-          notes: mp.notes || updated.monthPlans[m].notes || '',
+          notes: mp.notes || currentMonth.notes || '',
           weeks: populatedWeeks,
         };
       }

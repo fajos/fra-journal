@@ -70,7 +70,9 @@ export const DAY_KEYS: DayKey[] = [
  *   - November starts cleanly on Monday Nov 2 (Week 1: Nov 2 – Nov 8) with ZERO overlap!
  * - Every week is guaranteed full 7 days, and every month has either 4 or 5 complete weeks.
  */
-export function getWeeksForMonth(year: number, monthIndex: number): MonthWeekInfo[] {
+export function getWeeksForMonth(yearInput: number | string | undefined | null, monthIndexInput: number | string | undefined | null): MonthWeekInfo[] {
+  const year = Number(yearInput) || new Date().getFullYear();
+  const monthIndex = Math.min(Math.max(1, Number(monthIndexInput) || 1), 12);
   const weeks: MonthWeekInfo[] = [];
 
   // Find the Monday of the week that contains the 1st of this month
@@ -82,7 +84,9 @@ export function getWeeksForMonth(year: number, monthIndex: number): MonthWeekInf
 
   let weekIndex = 1;
 
-  while (true) {
+  // A calendar month contains at most 5 or 6 weeks.
+  // Guard with maximum 8 iterations to make an infinite loop impossible under any condition.
+  for (let iter = 0; iter < 8; iter++) {
     const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3);
     const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
 
@@ -134,6 +138,21 @@ export function getWeeksForMonth(year: number, monthIndex: number): MonthWeekInf
 
     // Move to next Monday
     monday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 7);
+  }
+
+  // Fallback safety: ensure at least 4 weeks if date engine ever fails
+  if (weeks.length === 0) {
+    for (let w = 1; w <= 4; w++) {
+      weeks.push({
+        weekIndex: w,
+        startDay: (w - 1) * 7 + 1,
+        endDay: w * 7,
+        label: `Week ${w}`,
+        shortLabel: `Week ${w}`,
+        dateRange: `Week ${w}, ${year}`,
+        days: {} as any,
+      });
+    }
   }
 
   return weeks;

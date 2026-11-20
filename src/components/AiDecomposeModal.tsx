@@ -64,9 +64,13 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
 
   const handleApply = () => {
     if (!plan) return;
-    hapticFeedback.success();
-    onApply(plan);
-    onClose();
+    try {
+      hapticFeedback.success();
+      onApply(plan);
+      onClose();
+    } catch (err) {
+      console.error('Failed to apply decomposition:', err);
+    }
   };
 
   return (
@@ -140,7 +144,7 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
                   Intelligent Cascading Decomposition
                 </Text>
                 <Text style={[styles.engineBadgeSub, { color: theme.colors.textMuted }]}>
-                  AI engine powered by background server environment
+                  Intelligently plans quarterly milestones, monthly targets &amp; weekly actions
                 </Text>
               </View>
             </View>
@@ -177,7 +181,7 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
               >
                 <View style={styles.previewHeader}>
                   <Text style={[styles.previewTitle, { color: theme.colors.primary }]}>
-                    Generated Plan ({plan.source})
+                    Generated Plan Preview
                   </Text>
                 </View>
 
