@@ -25,7 +25,9 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ]
     },
     "web": {
@@ -40,6 +42,12 @@
           "faceIDPermission": "Allow Reflective E-Journal to use Face ID to authenticate and protect your private journal entries."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cf324628-c896-4576-82b9-2bc0a446aa8f"
+      }
+    },
+    "owner": "e-journal"
   }
 }

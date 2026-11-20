@@ -84,7 +84,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               <BookOpen size={28} color={theme.colors.primary} />
             </View>
             <Text style={[styles.kwsBadge, { color: theme.colors.primary }]}>
-              KINGDOM WEALTH SUMMIT 2026
+              ANNUAL LIFE PLANNER • FINISH RICH AFRICA
             </Text>
             <Text
               style={[

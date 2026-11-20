@@ -11,6 +11,8 @@ export interface CloudUser {
   id: number;
   email: string;
   full_name: string;
+  is_kws_member?: boolean;
+  membership_tag?: string;
 }
 
 export async function getServerUrl(): Promise<string> {

@@ -698,7 +698,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </Text>
               <View style={[styles.memberBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <Text style={[styles.memberBadgeText, { color: theme.colors.primary }]}>
-                  ★ Kingdom Wealth Summit Member
+                  ★ {cloudUser?.membership_tag || (cloudUser?.is_kws_member ? 'Kingdom Wealth Summit Member' : 'E-Journal Member')}
                 </Text>
               </View>
             </View>
