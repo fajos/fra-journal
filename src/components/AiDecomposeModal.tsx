@@ -208,6 +208,14 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
                   </Text>
                 </View>
 
+                {/* 52-Week Coverage Badge */}
+                <View style={[styles.coverageBadge, { backgroundColor: '#10B98115', borderColor: '#10B98140' }]}>
+                  <Check size={14} color="#10B981" />
+                  <Text style={[styles.coverageBadgeText, { color: '#10B981' }]}>
+                    Includes 4 Quarters, 12 Months &amp; all Weekly Planners (Weeks 1–5 for every month)
+                  </Text>
+                </View>
+
                 {/* Apply Button */}
                 <Pressable onPress={handleApply} style={styles.applyBtn}>
                   <Check size={16} color="#FFFFFF" />
@@ -353,6 +361,20 @@ const styles = StyleSheet.create({
   milestoneItem: {
     fontSize: 11.5,
     lineHeight: 16,
+  },
+  coverageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 10,
+  },
+  coverageBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    flex: 1,
   },
   applyBtn: {
     backgroundColor: '#059669',
