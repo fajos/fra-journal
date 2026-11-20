@@ -4,7 +4,8 @@ import { JournalState } from '../types/journal';
 const TOKEN_KEY = '@ejournal_cloud_token';
 const USER_KEY = '@ejournal_cloud_user';
 const SERVER_URL_KEY = '@ejournal_server_url';
-const DEFAULT_SERVER_URL = 'http://localhost:3000';
+export const DEFAULT_SERVER_URL =
+  process.env.EXPO_PUBLIC_SERVER_URL || 'https://finishrichafrica.com';
 
 export interface CloudUser {
   id: number;

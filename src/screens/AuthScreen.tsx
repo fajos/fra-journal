@@ -30,7 +30,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
   // Optional Server URL configuration
   const [showServerConfig, setShowServerConfig] = useState(false);
-  const [serverInput, setServerInput] = useState('http://localhost:3000');
+  const [serverInput, setServerInput] = useState('https://finishrichafrica.com');
+
+  React.useEffect(() => {
+    getServerUrl().then((url) => setServerInput(url));
+  }, []);
 
   const handleSubmit = async () => {
     setErrorMsg('');
