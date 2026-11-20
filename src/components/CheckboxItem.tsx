@@ -56,7 +56,7 @@ export const CheckboxItem: React.FC<CheckboxItemProps> = ({
           },
           completed && styles.inputCompleted,
         ]}
-        multiline={false}
+        multiline={true}
       />
     </View>
   );
@@ -65,9 +65,9 @@ export const CheckboxItem: React.FC<CheckboxItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderBottomWidth: 1,
   },
   checkbox: {
@@ -77,11 +77,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
   },
   input: {
     flex: 1,
     fontSize: 14,
-    paddingVertical: 4,
+    lineHeight: 20,
+    paddingVertical: 2,
+    textAlignVertical: 'top',
   },
   inputCompleted: {
     textDecorationLine: 'line-through',

@@ -306,7 +306,8 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
                     placeholder={`Daily actions or notes for ${label} (${dayDate?.formatted || ''})...`}
                     placeholderTextColor={theme.colors.textLight}
                     style={[styles.dayInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
-                    multiline={false}
+                    multiline={true}
+                    numberOfLines={2}
                   />
                 </View>
               );
@@ -466,7 +467,10 @@ const styles = StyleSheet.create({
   },
   dayInput: {
     fontSize: 13.5,
-    paddingVertical: 2,
+    lineHeight: 20,
+    minHeight: 46,
+    paddingVertical: 4,
+    textAlignVertical: 'top',
   },
   carryInput: {
     fontSize: 14,

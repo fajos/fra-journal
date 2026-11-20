@@ -275,7 +275,7 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
                   placeholder={`Milestones for ${label}...`}
                   placeholderTextColor={theme.colors.textLight}
                   multiline
-                  numberOfLines={3}
+                  numberOfLines={4}
                   style={[styles.quarterInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
                 />
               </View>
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   textInput: {
     fontSize: 14,
     lineHeight: 22,
-    minHeight: 50,
+    minHeight: 64,
     textAlignVertical: 'top',
   },
   milestoneGrid: {
@@ -468,8 +468,8 @@ const styles = StyleSheet.create({
   },
   quarterInput: {
     fontSize: 13,
-    lineHeight: 19,
-    minHeight: 52,
+    lineHeight: 20,
+    minHeight: 72,
     textAlignVertical: 'top',
   },
 });

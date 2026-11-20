@@ -140,7 +140,7 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
             placeholder={`e.g. Focus theme for Q${selectedQuarter} (${selectedArea})...`}
             placeholderTextColor={theme.colors.textLight}
             multiline
-            numberOfLines={2}
+            numberOfLines={3}
             style={[styles.themeInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   themeInput: {
     fontSize: 14,
     lineHeight: 22,
-    minHeight: 46,
+    minHeight: 56,
     textAlignVertical: 'top',
   },
   monthHeaderRow: {
