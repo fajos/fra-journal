@@ -101,7 +101,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   // Cloud & Sync states
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
-  const [serverUrl, setLocalServerUrl] = useState('https://finishrichafrica.com');
+  const [serverUrl, setLocalServerUrl] = useState('https://kws2026.vercel.app');
   const [syncLoading, setSyncLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');

@@ -30,7 +30,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
   // Optional Server URL configuration
   const [showServerConfig, setShowServerConfig] = useState(false);
-  const [serverInput, setServerInput] = useState('https://finishrichafrica.com');
+  const [serverInput, setServerInput] = useState('https://kws2026.vercel.app');
 
   React.useEffect(() => {
     getServerUrl().then((url) => setServerInput(url));
