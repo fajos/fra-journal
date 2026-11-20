@@ -1,4 +1,4 @@
-export type LifeArea =
+export type PredefinedLifeArea =
   | 'Personal growth'
   | 'Health and wellbeing'
   | 'Spiritual life'
@@ -7,6 +7,8 @@ export type LifeArea =
   | 'Family and relationships'
   | 'Community and impact'
   | 'Rest and joy';
+
+export type LifeArea = PredefinedLifeArea | (string & {});
 
 export const LIFE_AREAS: { key: LifeArea; label: string; icon: string; defaultPlaceholder: string }[] = [
   {
@@ -150,6 +152,7 @@ export interface GoalEntry {
     q4: string;
   };
   supportNeeded: string;
+  isCustom?: boolean;
   // Nested goal-specific plans
   quarterPlans: Record<1 | 2 | 3 | 4, QuarterPlan>;
   monthPlans: Record<number, MonthPlan>; // 1 to 12
@@ -157,6 +160,7 @@ export interface GoalEntry {
 
 export interface JournalState {
   year: number; // Currently active year
-  goals: Record<LifeArea, GoalEntry>; // Goals for the active year
-  yearsData: Record<number, Record<LifeArea, GoalEntry>>; // Multi-year persistent store
+  goals: Record<string, GoalEntry>; // Goals for the active year
+  customAreas?: string[]; // Custom areas added by user
+  yearsData: Record<number, Record<string, GoalEntry>>; // Multi-year persistent store
 }

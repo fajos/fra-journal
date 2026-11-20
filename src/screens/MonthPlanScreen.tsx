@@ -14,7 +14,7 @@ import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { MONTH_NAMES, updateGoalMonth, getWeeksForMonth } from '../storage/journalStorage';
+import { MONTH_NAMES, updateGoalMonth, getWeeksForMonth, getActiveGoalAreas } from '../storage/journalStorage';
 import { CheckSquare, ListTodo, FileText, ArrowRight, Clock, RotateCcw } from 'lucide-react-native';
 
 interface MonthPlanScreenProps {
@@ -89,6 +89,7 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
         onSelectArea={onSelectArea}
         goalText={currentGoal.text}
         monthName={MONTH_NAMES[selectedMonth - 1]}
+        areas={getActiveGoalAreas(state)}
       />
 
       {/* Month Picker Horizontal Strip */}

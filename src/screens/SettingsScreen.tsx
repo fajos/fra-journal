@@ -55,12 +55,14 @@ import {
   Key,
   Globe,
   X,
+  Trash2,
 } from 'lucide-react-native';
 import { Modal, ActivityIndicator } from 'react-native';
 import {
   CloudUser,
   getCloudUser,
   cloudLogout,
+  cloudDeleteAccount,
   syncWithCloud,
 } from '../services/cloudSyncService';
 import {
@@ -263,6 +265,46 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setCloudUser(null);
     }
     showStatus('Logged out and device storage cleared.');
+  };
+
+  const confirmDeleteAccount = () => {
+    hapticFeedback.medium();
+    const title = 'Delete Account & All Data?';
+    const message =
+      'This will permanently delete your user profile, all annual goals, weekly actions, daily notes, and email reminders from our servers. This action is irreversible.';
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) {
+        handleDeleteAccount();
+      }
+    } else {
+      Alert.alert(title, message, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account Forever',
+          style: 'destructive',
+          onPress: handleDeleteAccount,
+        },
+      ]);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    hapticFeedback.error();
+    setSyncLoading(true);
+    const res = await cloudDeleteAccount();
+    setSyncLoading(false);
+    if (res.success) {
+      if (onLogout) {
+        await onLogout();
+      } else {
+        await resetJournalState();
+        setCloudUser(null);
+      }
+      showStatus('Account permanently deleted.');
+    } else {
+      Alert.alert('Error', res.error || 'Failed to delete account.');
+    }
   };
 
   const handleSaveReminderSettings = async () => {
@@ -746,6 +788,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             >
               <LogOut size={15} color="#EF4444" />
               <Text style={styles.logoutBtnText}>Log Out &amp; Clear Device Data</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={confirmDeleteAccount}
+              style={[
+                styles.deleteAccountBtn,
+                { backgroundColor: theme.isDark ? '#2E1518' : '#FEF2F2', borderColor: '#FCA5A5' },
+              ]}
+            >
+              <Trash2 size={15} color="#DC2626" />
+              <Text style={styles.deleteAccountBtnText}>Delete Account &amp; Wipe Cloud Data</Text>
             </Pressable>
           </View>
         </View>
@@ -1315,6 +1368,20 @@ const styles = StyleSheet.create({
   },
   logoutBtnText: {
     color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  deleteAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  deleteAccountBtnText: {
+    color: '#DC2626',
     fontSize: 13,
     fontWeight: '700',
   },

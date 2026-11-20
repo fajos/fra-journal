@@ -22,6 +22,7 @@ interface GoalScopeHeaderProps {
   quarter?: number;
   monthName?: string;
   weekIndex?: number;
+  areas?: { key: string; label: string }[];
 }
 
 export const getLifeAreaIcon = (area: LifeArea, size = 15, color = '#8E5B67') => {
@@ -42,6 +43,8 @@ export const getLifeAreaIcon = (area: LifeArea, size = 15, color = '#8E5B67') =>
       return <HandHeart size={size} color={color} />;
     case 'Rest and joy':
       return <Palmtree size={size} color={color} />;
+    default:
+      return <Target size={size} color={color} />;
   }
 };
 
@@ -52,6 +55,7 @@ export const GoalScopeHeader: React.FC<GoalScopeHeaderProps> = ({
   quarter,
   monthName,
   weekIndex,
+  areas,
 }) => {
   const { theme } = useTheme();
 
@@ -110,7 +114,7 @@ export const GoalScopeHeader: React.FC<GoalScopeHeaderProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipsScroll}
       >
-        {LIFE_AREAS.map((item) => {
+        {(areas || LIFE_AREAS).map((item) => {
           const isActive = item.key === selectedArea;
           return (
             <Pressable

@@ -14,7 +14,7 @@ import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { MONTH_NAMES, updateGoalQuarter } from '../storage/journalStorage';
+import { MONTH_NAMES, updateGoalQuarter, getActiveGoalAreas } from '../storage/journalStorage';
 import { Compass, Calendar, ArrowRight } from 'lucide-react-native';
 
 interface QuarterPlanScreenProps {
@@ -86,6 +86,7 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
         onSelectArea={onSelectArea}
         goalText={currentGoal.text}
         quarter={selectedQuarter}
+        areas={getActiveGoalAreas(state)}
       />
 
       {/* Quarter Tab Selector */}

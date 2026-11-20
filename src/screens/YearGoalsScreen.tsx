@@ -18,7 +18,13 @@ import { LifeBalanceRadar } from '../components/LifeBalanceRadar';
 import { JOURNAL_QUOTES } from '../constants/quotes';
 import { getLifeAreaIcon } from '../components/GoalScopeHeader';
 import { hapticFeedback } from '../services/hapticsService';
-import { getRollingYears, switchJournalYear } from '../storage/journalStorage';
+import {
+  getRollingYears,
+  switchJournalYear,
+  getActiveGoalAreas,
+  addCustomGoal,
+  deleteGoal,
+} from '../storage/journalStorage';
 import {
   CheckCircle2,
   Compass,
@@ -30,6 +36,9 @@ import {
   X,
   Archive,
   Sparkles,
+  Plus,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { AiDecomposeModal } from '../components/AiDecomposeModal';
 import { applyDecompositionToGoal, DecomposedPlan } from '../services/aiDecomposeService';
@@ -61,6 +70,44 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
 
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiTargetArea, setAiTargetArea] = useState<LifeArea>('Health and wellbeing');
+
+  // Add Goal Modal State
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [newGoalName, setNewGoalName] = useState('');
+  const [newGoalText, setNewGoalText] = useState('');
+  const [newGoalPriority, setNewGoalPriority] = useState<1 | 2 | 3>(2);
+  const [addGoalError, setAddGoalError] = useState('');
+
+  // Delete Goal Confirmation State
+  const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+
+  const handleAddGoal = () => {
+    const cleanName = newGoalName.trim();
+    if (!cleanName) {
+      setAddGoalError('Please enter a goal name or select an area.');
+      return;
+    }
+    if (state.goals[cleanName]) {
+      setAddGoalError('A goal for this area already exists.');
+      return;
+    }
+    hapticFeedback.success();
+    const updated = addCustomGoal(state, cleanName, newGoalText.trim(), newGoalPriority);
+    onUpdateState(updated);
+    setNewGoalName('');
+    setNewGoalText('');
+    setNewGoalPriority(2);
+    setAddGoalError('');
+    setShowAddGoalModal(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!goalToDelete) return;
+    hapticFeedback.medium();
+    const updated = deleteGoal(state, goalToDelete);
+    onUpdateState(updated);
+    setGoalToDelete(null);
+  };
 
   const handleApplyDecomposition = (plan: DecomposedPlan) => {
     const current = state.goals[aiTargetArea];
@@ -163,11 +210,26 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         ]}
       >
         <View style={styles.bannerRow}>
-          <View style={styles.counterBadge}>
-            <CheckCircle2 size={15} color={theme.colors.primary} />
-            <Text style={[styles.counterText, { color: theme.colors.textDark }]}>
-              Top 3 Goals: <Text style={[styles.bold, { color: theme.colors.primary }]}>{topThreeCount}/3</Text>
-            </Text>
+          <View style={styles.bannerLeftGroup}>
+            <View style={styles.counterBadge}>
+              <CheckCircle2 size={15} color={theme.colors.primary} />
+              <Text style={[styles.counterText, { color: theme.colors.textDark }]}>
+                Top 3 Goals: <Text style={[styles.bold, { color: theme.colors.primary }]}>{topThreeCount}/3</Text>
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => {
+                hapticFeedback.selection();
+                setAddGoalError('');
+                setShowAddGoalModal(true);
+              }}
+              style={[styles.addGoalBtn, { backgroundColor: theme.colors.primary }]}
+              hitSlop={6}
+            >
+              <Plus size={13} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={styles.addGoalBtnText}>Add Goal</Text>
+            </Pressable>
           </View>
 
           {/* View Mode Toggle */}
@@ -213,7 +275,7 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         <Text style={[styles.bannerHint, { color: theme.colors.textMuted }]}>
           {viewMode === 'cards'
             ? 'Each life area cascades into quarterly, monthly, and weekly plans.'
-            : 'Track overall balance and momentum across your 8 life areas.'}
+            : 'Track overall balance and momentum across your life areas.'}
         </Text>
       </View>
 
@@ -225,7 +287,7 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         />
       ) : (
         <View style={[styles.grid, isWide && styles.gridWide]}>
-          {LIFE_AREAS.map((item) => {
+          {getActiveGoalAreas(state).map((item) => {
             const goal = state.goals[item.key];
             if (!goal) return null;
 
@@ -257,11 +319,27 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                       {item.label}
                     </Text>
                   </View>
-                  {goal.isTopThree && (
-                    <View style={[styles.starPill, { backgroundColor: theme.colors.primaryLight }]}>
-                      <Text style={[styles.starPillText, { color: theme.colors.primary }]}>★ Priority</Text>
-                    </View>
-                  )}
+                  <View style={styles.cardHeaderActions}>
+                    {goal.isTopThree && (
+                      <View style={[styles.starPill, { backgroundColor: theme.colors.primaryLight }]}>
+                        <Text style={[styles.starPillText, { color: theme.colors.primary }]}>★ Priority</Text>
+                      </View>
+                    )}
+                    <Pressable
+                      onPress={() => {
+                        hapticFeedback.medium();
+                        setGoalToDelete(item.key);
+                      }}
+                      style={[
+                        styles.deleteGoalBtn,
+                        { backgroundColor: theme.isDark ? '#2E1518' : '#FEF2F2' },
+                      ]}
+                      hitSlop={6}
+                      accessibilityLabel={`Delete ${item.label} goal and all plans`}
+                    >
+                      <Trash2 size={13} color="#EF4444" />
+                    </Pressable>
+                  </View>
                 </View>
 
                 <TextInput
@@ -509,6 +587,223 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Add Custom Goal Modal */}
+      <Modal
+        visible={showAddGoalModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAddGoalModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowAddGoalModal(false)}
+        >
+          <Pressable
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: theme.colors.cardBorder,
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <Plus size={20} color={theme.colors.primary} />
+                <Text style={[styles.modalTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+                  Add Goal for {state.year}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setShowAddGoalModal(false)}
+                hitSlop={8}
+              >
+                <X size={18} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
+
+            <Text style={[styles.modalDesc, { color: theme.colors.textMuted }]}>
+              Create a custom goal category or pick a suggested life area. All quarters, months, and weekly schedules will be automatically prepared for you.
+            </Text>
+
+            {/* Suggested Unadded Default Areas */}
+            {(() => {
+              const unadded = LIFE_AREAS.filter((a) => !state.goals[a.key]);
+              if (unadded.length === 0) return null;
+              return (
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={[styles.modalSectionLabel, { color: theme.colors.textMuted }]}>
+                    Suggested Areas
+                  </Text>
+                  <View style={styles.suggestionChips}>
+                    {unadded.map((item) => (
+                      <Pressable
+                        key={item.key}
+                        onPress={() => {
+                          hapticFeedback.selection();
+                          setNewGoalName(item.label);
+                          setAddGoalError('');
+                        }}
+                        style={[
+                          styles.suggestionChip,
+                          {
+                            backgroundColor: newGoalName === item.label ? theme.colors.primary : theme.colors.linedPaper,
+                            borderColor: theme.colors.cardBorder,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.suggestionChipText,
+                            { color: newGoalName === item.label ? '#FFFFFF' : theme.colors.textDark },
+                          ]}
+                        >
+                          + {item.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              );
+            })()}
+
+            <Text style={[styles.modalInputLabel, { color: theme.colors.textDark }]}>
+              Goal Area or Category Name *
+            </Text>
+            <TextInput
+              value={newGoalName}
+              onChangeText={(t) => {
+                setNewGoalName(t);
+                setAddGoalError('');
+              }}
+              placeholder="e.g. Ministry, Creative Arts, PhD Studies..."
+              placeholderTextColor={theme.colors.textLight}
+              style={[
+                styles.modalTextInput,
+                {
+                  color: theme.colors.textDark,
+                  borderColor: theme.colors.cardBorder,
+                  backgroundColor: theme.colors.cardBackground,
+                },
+              ]}
+            />
+
+            <Text style={[styles.modalInputLabel, { color: theme.colors.textDark }]}>
+              Primary Yearly Goal Statement (Optional)
+            </Text>
+            <TextInput
+              value={newGoalText}
+              onChangeText={setNewGoalText}
+              placeholder="What specific outcome do you want to accomplish?"
+              placeholderTextColor={theme.colors.textLight}
+              multiline
+              numberOfLines={2}
+              style={[
+                styles.modalTextInput,
+                {
+                  color: theme.colors.textDark,
+                  borderColor: theme.colors.cardBorder,
+                  backgroundColor: theme.colors.cardBackground,
+                  minHeight: 50,
+                  textAlignVertical: 'top',
+                },
+              ]}
+            />
+
+            {addGoalError ? (
+              <Text style={styles.modalErrorText}>{addGoalError}</Text>
+            ) : null}
+
+            <View style={styles.modalBtnRow}>
+              <Pressable
+                onPress={() => setShowAddGoalModal(false)}
+                style={[styles.modalCancelBtn, { borderColor: theme.colors.cardBorder }]}
+              >
+                <Text style={[styles.modalCancelBtnText, { color: theme.colors.textMuted }]}>Cancel</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleAddGoal}
+                style={[styles.modalConfirmBtn, { backgroundColor: theme.colors.primary }]}
+              >
+                <Text style={styles.modalConfirmBtnText}>Create Goal</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Delete Goal Confirmation Modal */}
+      <Modal
+        visible={Boolean(goalToDelete)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGoalToDelete(null)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setGoalToDelete(null)}
+        >
+          <Pressable
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: '#EF4444',
+                borderWidth: 1.5,
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <AlertTriangle size={20} color="#DC2626" />
+                <Text style={[styles.modalTitle, { color: '#DC2626', fontFamily: theme.typography.fontFamilySerif }]}>
+                  Delete Goal &amp; All Plans?
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setGoalToDelete(null)}
+                hitSlop={8}
+              >
+                <X size={18} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
+
+            <Text style={[styles.modalDesc, { color: theme.colors.textDark, lineHeight: 20 }]}>
+              Are you sure you want to delete <Text style={{ fontWeight: '700' }}>"{goalToDelete}"</Text>?
+            </Text>
+
+            <View style={[styles.deleteWarningBox, { backgroundColor: theme.isDark ? '#2E1518' : '#FEF2F2' }]}>
+              <Text style={[styles.deleteWarningText, { color: theme.isDark ? '#FCA5A5' : '#991B1B' }]}>
+                ⚠️ This will permanently erase this goal along with all of its associated:
+                {'\n'}• 4 Quarterly milestones &amp; themes
+                {'\n'}• 12 Monthly focus targets &amp; reviews
+                {'\n'}• Weekly schedules &amp; daily action notes
+                {'\n'}This action cannot be undone.
+              </Text>
+            </View>
+
+            <View style={styles.modalBtnRow}>
+              <Pressable
+                onPress={() => setGoalToDelete(null)}
+                style={[styles.modalCancelBtn, { borderColor: theme.colors.cardBorder }]}
+              >
+                <Text style={[styles.modalCancelBtnText, { color: theme.colors.textMuted }]}>Keep Goal</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleConfirmDelete}
+                style={[styles.modalConfirmBtn, { backgroundColor: '#DC2626' }]}
+              >
+                <Text style={styles.modalConfirmBtnText}>Delete Everything</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* AI Decomposition Modal */}
@@ -769,6 +1064,105 @@ const styles = StyleSheet.create({
   },
   actionPillSecondaryText: {
     fontSize: 10.5,
+    fontWeight: '600',
+  },
+  bannerLeftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addGoalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  addGoalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  cardHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deleteGoalBtn: {
+    padding: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  suggestionChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  suggestionChip: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  suggestionChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  modalInputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  modalTextInput: {
+    fontSize: 13,
+    padding: 9,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  modalErrorText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 8,
+  },
+  modalCancelBtn: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  modalCancelBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  modalConfirmBtn: {
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  modalConfirmBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  deleteWarningBox: {
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  deleteWarningText: {
+    fontSize: 11.5,
+    lineHeight: 18,
     fontWeight: '600',
   },
 });

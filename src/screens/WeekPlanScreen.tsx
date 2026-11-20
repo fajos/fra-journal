@@ -19,6 +19,7 @@ import {
   updateGoalWeek,
   getWeeksForMonth,
   createDefaultWeekPlan,
+  getActiveGoalAreas,
 } from '../storage/journalStorage';
 import { Star, CalendarDays, ArrowRightLeft } from 'lucide-react-native';
 
@@ -118,6 +119,7 @@ export const WeekPlanScreen: React.FC<WeekPlanScreenProps> = ({
         goalText={currentGoal.text}
         monthName={MONTH_NAMES[selectedMonth - 1]}
         weekIndex={safeWeekIndex}
+        areas={getActiveGoalAreas(state)}
       />
 
       {/* Month Selector Strip */}

@@ -66,6 +66,14 @@ function AppContent() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 800;
 
+  // Fallback to first available goal if current selected area was deleted
+  useEffect(() => {
+    const keys = Object.keys(state.goals || {});
+    if (keys.length > 0 && !state.goals[selectedArea]) {
+      setSelectedArea(keys[0] as LifeArea);
+    }
+  }, [state.goals, selectedArea]);
+
   useEffect(() => {
     async function initialize() {
       const bioLabel = await getBiometricLabel();

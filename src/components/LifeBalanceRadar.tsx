@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import Svg, { Polygon, Line, Circle, Text as SvgText } from 'react-native-svg';
-import { JournalState, LIFE_AREAS, LifeArea } from '../types/journal';
+import { JournalState, LifeArea } from '../types/journal';
 import { useTheme } from '../context/ThemeContext';
 import { Sparkles, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import { getActiveGoalAreas } from '../storage/journalStorage';
 
 interface LifeBalanceRadarProps {
   state: JournalState;
@@ -50,7 +51,9 @@ export const LifeBalanceRadar: React.FC<LifeBalanceRadarProps> = ({ state, onSel
   const center = size / 2;
   const radius = center - 42;
 
-  const areaScores = LIFE_AREAS.map((item) => {
+  const activeAreas = getActiveGoalAreas(state);
+
+  const areaScores = activeAreas.map((item) => {
     const goal = state.goals[item.key];
     const score = calculateAreaScore(goal);
     return {
@@ -60,15 +63,15 @@ export const LifeBalanceRadar: React.FC<LifeBalanceRadarProps> = ({ state, onSel
     };
   });
 
-  const totalScore = Math.round(
-    areaScores.reduce((acc, curr) => acc + curr.score, 0) / areaScores.length
-  );
+  const totalScore = areaScores.length > 0
+    ? Math.round(areaScores.reduce((acc, curr) => acc + curr.score, 0) / areaScores.length)
+    : 0;
 
   const sorted = [...areaScores].sort((a, b) => b.score - a.score);
   const strongest = sorted[0];
   const needsLove = sorted[sorted.length - 1];
 
-  const totalPoints = LIFE_AREAS.length;
+  const totalPoints = activeAreas.length || 1;
   const angleStep = (Math.PI * 2) / totalPoints;
   const gridLevels = [0.25, 0.5, 0.75, 1];
 

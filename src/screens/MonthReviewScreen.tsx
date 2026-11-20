@@ -14,7 +14,7 @@ import { QuoteFooter } from '../components/QuoteFooter';
 import { CheckboxItem } from '../components/CheckboxItem';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
-import { MONTH_NAMES, updateGoalMonthReview } from '../storage/journalStorage';
+import { MONTH_NAMES, updateGoalMonthReview, getActiveGoalAreas } from '../storage/journalStorage';
 import {
   Trophy,
   AlertCircle,
@@ -122,6 +122,7 @@ export const MonthReviewScreen: React.FC<MonthReviewScreenProps> = ({
         onSelectArea={onSelectArea}
         goalText={currentGoal.text}
         monthName={MONTH_NAMES[selectedMonth - 1]}
+        areas={getActiveGoalAreas(state)}
       />
 
       {/* Month picker chips */}

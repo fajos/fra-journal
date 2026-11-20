@@ -7,6 +7,8 @@ import {
   Pressable,
   TextInput,
   useWindowDimensions,
+  Alert,
+  Platform,
 } from 'react-native';
 import { LifeArea, JournalState } from '../types/journal';
 import { useTheme } from '../context/ThemeContext';
@@ -17,6 +19,7 @@ import { ReminderModal } from '../components/ReminderModal';
 import { ReflectivePromptsModal } from '../components/ReflectivePromptsModal';
 import { JOURNAL_QUOTES } from '../constants/quotes';
 import { hapticFeedback } from '../services/hapticsService';
+import { getActiveGoalAreas, deleteGoal } from '../storage/journalStorage';
 import {
   ChevronRight,
   Target,
@@ -25,6 +28,7 @@ import {
   Layers,
   Bell,
   HelpCircle,
+  Trash2,
 } from 'lucide-react-native';
 import { AiDecomposeModal } from '../components/AiDecomposeModal';
 import { applyDecompositionToGoal, DecomposedPlan } from '../services/aiDecomposeService';
@@ -95,6 +99,39 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
     });
   };
 
+  const handleDeleteThisGoal = () => {
+    hapticFeedback.medium();
+    const title = `Delete "${selectedArea}" Goal?`;
+    const message = `This will permanently erase "${selectedArea}" and all associated quarterly milestones, monthly targets, weekly actions, and daily plans for ${state.year}. This action cannot be undone.`;
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) {
+        const remaining = Object.keys(state.goals).filter((k) => k !== selectedArea);
+        const updated = deleteGoal(state, selectedArea);
+        onUpdateState(updated);
+        if (remaining.length > 0) {
+          onSelectArea(remaining[0] as LifeArea);
+        }
+      }
+    } else {
+      Alert.alert(title, message, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Everything',
+          style: 'destructive',
+          onPress: () => {
+            const remaining = Object.keys(state.goals).filter((k) => k !== selectedArea);
+            const updated = deleteGoal(state, selectedArea);
+            onUpdateState(updated);
+            if (remaining.length > 0) {
+              onSelectArea(remaining[0] as LifeArea);
+            }
+          },
+        },
+      ]);
+    }
+  };
+
   const handleOpenReminder = (title: string) => {
     hapticFeedback.light();
     setActiveMilestoneTitle(title || `Milestone for ${selectedArea}`);
@@ -132,6 +169,7 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
         selectedArea={selectedArea}
         onSelectArea={onSelectArea}
         goalText={currentGoal.text}
+        areas={getActiveGoalAreas(state)}
       />
 
       <View style={styles.formContainer}>
@@ -319,6 +357,20 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
             style={[styles.textInput, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySans }]}
           />
         </View>
+
+        {/* Delete Goal and Associated Plans Button */}
+        <Pressable
+          onPress={handleDeleteThisGoal}
+          style={[
+            styles.deleteGoalCardBtn,
+            { backgroundColor: theme.isDark ? '#2E1518' : '#FEF2F2', borderColor: '#FCA5A5' },
+          ]}
+        >
+          <Trash2 size={15} color="#DC2626" />
+          <Text style={styles.deleteGoalCardBtnText}>
+            Delete "{selectedArea}" &amp; All Associated Plans
+          </Text>
+        </Pressable>
       </View>
 
       <QuoteFooter
@@ -471,5 +523,22 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     minHeight: 72,
     textAlignVertical: 'top',
+  },
+  deleteGoalCardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  deleteGoalCardBtnText: {
+    color: '#DC2626',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

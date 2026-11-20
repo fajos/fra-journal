@@ -363,6 +363,105 @@ export function createDefaultGoalsForYear(year: number): Record<LifeArea, GoalEn
   return goals;
 }
 
+export function createEmptyGoalEntry(area: string, year: number, isCustom: boolean = true): GoalEntry {
+  return {
+    area: area as LifeArea,
+    text: '',
+    priority: 2,
+    isTopThree: false,
+    whyItMatters: '',
+    milestones: { q1: '', q2: '', q3: '', q4: '' },
+    supportNeeded: '',
+    isCustom,
+    quarterPlans: createDefaultQuarterPlans(area as LifeArea),
+    monthPlans: createDefaultMonthPlans(area as LifeArea, year),
+  };
+}
+
+export function getActiveGoalAreas(state: JournalState): {
+  key: string;
+  label: string;
+  icon: string;
+  defaultPlaceholder: string;
+  isCustom: boolean;
+}[] {
+  if (!state || !state.goals) return LIFE_AREAS.map(a => ({ ...a, isCustom: false }));
+  const keys = Object.keys(state.goals);
+  return keys.map((key) => {
+    const predefined = LIFE_AREAS.find((a) => a.key === key);
+    if (predefined) {
+      return { ...predefined, isCustom: false };
+    }
+    return {
+      key,
+      label: key,
+      icon: 'Target',
+      defaultPlaceholder: `e.g. Primary milestone and focus for ${key}...`,
+      isCustom: true,
+    };
+  });
+}
+
+export function addCustomGoal(
+  state: JournalState,
+  areaName: string,
+  goalText: string = '',
+  priority: 1 | 2 | 3 = 2
+): JournalState {
+  const cleanName = areaName.trim();
+  if (!cleanName) return state;
+
+  const currentGoals = { ...state.goals };
+  const customAreas = Array.from(new Set([...(state.customAreas || []), cleanName]));
+
+  const newGoal: GoalEntry = {
+    ...createEmptyGoalEntry(cleanName, state.year, true),
+    text: goalText.trim(),
+    priority,
+    isTopThree: priority === 1,
+  };
+
+  currentGoals[cleanName] = newGoal;
+
+  const yearsData = { ...(state.yearsData || {}) };
+  if (yearsData[state.year]) {
+    yearsData[state.year] = {
+      ...yearsData[state.year],
+      [cleanName]: newGoal,
+    };
+  } else {
+    yearsData[state.year] = currentGoals;
+  }
+
+  return {
+    ...state,
+    goals: currentGoals,
+    customAreas,
+    yearsData,
+  };
+}
+
+export function deleteGoal(state: JournalState, areaName: string): JournalState {
+  const currentGoals = { ...state.goals };
+  delete currentGoals[areaName];
+
+  const customAreas = (state.customAreas || []).filter((a) => a !== areaName);
+
+  const yearsData = { ...(state.yearsData || {}) };
+  if (yearsData[state.year]) {
+    const yrGoals = { ...yearsData[state.year] };
+    delete yrGoals[areaName];
+    yearsData[state.year] = yrGoals;
+  }
+
+  return {
+    ...state,
+    goals: currentGoals,
+    customAreas,
+    yearsData,
+  };
+}
+
 export function createInitialJournalState(year: number = new Date().getFullYear()): JournalState {
   const defaultGoals = createDefaultGoalsForYear(year);
   return {
@@ -389,6 +488,7 @@ export async function loadJournalState(): Promise<JournalState> {
       return {
         year: activeYear,
         goals,
+        customAreas: parsed.customAreas || Object.keys(goals).filter((k) => !LIFE_AREAS.some((a) => a.key === k)),
         yearsData,
       };
     }

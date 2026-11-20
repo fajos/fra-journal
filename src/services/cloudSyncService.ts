@@ -188,3 +188,37 @@ export async function syncWithCloud(localState: JournalState): Promise<{ success
     return { success: false, message: 'Could not reach server. Changes kept locally.' };
   }
 }
+
+/**
+ * Permanently deletes the user's account and all associated journal data from the server.
+ * Also clears all local tokens and storage keys.
+ */
+export async function cloudDeleteAccount(): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const token = await getCloudToken();
+    const baseUrl = await getServerUrl();
+
+    if (token) {
+      const res = await fetch(`${baseUrl}/api/journal/auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Failed to delete account from server' };
+      }
+    }
+
+    // Wipe all local cloud credentials and local data
+    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, '@ejournal_state']);
+
+    return { success: true, message: 'Account and all cloud data successfully deleted.' };
+  } catch (err: any) {
+    console.error('Error deleting account:', err);
+    return { success: false, error: err?.message || 'Network error while deleting account.' };
+  }
+}
