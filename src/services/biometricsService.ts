@@ -59,17 +59,22 @@ export async function authenticateWithBiometrics(
       }
     }
 
-    const result = await LocalAuthentication.authenticateAsync({
+    const authOptions: LocalAuthentication.LocalAuthenticationOptions = {
       promptMessage: prompt,
-      promptSubtitle: 'Confirm biometric identity',
-      promptDescription: hasFace
-        ? 'Scan face or use sensor to unlock'
-        : 'Touch fingerprint sensor to unlock',
       cancelLabel: 'Cancel',
-      fallbackLabel: 'Use PIN / Passcode',
+      fallbackLabel: 'Enter Passcode',
       disableDeviceFallback: false,
-      biometricsSecurityLevel: 'weak', // Allows both Class 2 (camera face) and Class 3 (fingerprint/3D face) on Android
-    });
+    };
+
+    if (Platform.OS === 'android') {
+      authOptions.promptSubtitle = 'Confirm biometric identity';
+      authOptions.promptDescription = hasFace
+        ? 'Scan face or use sensor to unlock'
+        : 'Touch fingerprint sensor to unlock';
+      authOptions.biometricsSecurityLevel = 'weak';
+    }
+
+    const result = await LocalAuthentication.authenticateAsync(authOptions);
 
     return result.success;
   } catch (e) {
