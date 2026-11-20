@@ -167,18 +167,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const handleToggleBiometrics = async (enabled: boolean) => {
     hapticFeedback.selection();
     if (enabled) {
-      const authed = await authenticateWithBiometrics('Enable biometric security for your journal');
+      const authed = await authenticateWithBiometrics('Enable biometric and screen lock for your journal');
       if (authed) {
         setBiometricEnabled(true);
         await AsyncStorage.setItem(BIOMETRIC_KEY, 'true');
-        showStatus('Biometric lock enabled! Your journal is now protected.');
+        showStatus('App lock enabled! Your journal is now protected.');
       } else {
-        showStatus('Biometric authentication failed.');
+        showStatus('Authentication required to enable app lock.');
       }
     } else {
-      setBiometricEnabled(false);
-      await AsyncStorage.setItem(BIOMETRIC_KEY, 'false');
-      showStatus('Biometric lock turned off.');
+      // Must authenticate with Face ID / Fingerprint / PIN to turn off lock
+      const authed = await authenticateWithBiometrics('Authenticate to turn off journal lock');
+      if (authed) {
+        setBiometricEnabled(false);
+        await AsyncStorage.setItem(BIOMETRIC_KEY, 'false');
+        showStatus('Journal lock turned off.');
+      } else {
+        // Keep it enabled if cancelled or failed
+        setBiometricEnabled(true);
+        showStatus('Authentication required to disable lock. Lock remains active.');
+      }
     }
   };
 
@@ -608,16 +616,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <View style={styles.cardHeader}>
             <ShieldCheck size={18} color={theme.colors.primary} />
             <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
-              Biometric Privacy Lock
+              Biometric & Screen Lock
             </Text>
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Keep your deeply personal thoughts, finances, and reflections private with FaceID, TouchID, or Passcode on app launch.
+            Keep your deeply personal thoughts, finances, and reflections private with Face ID, Touch ID, Fingerprint, or device Passcode/PIN on app launch.
           </Text>
 
           <View style={styles.switchRow}>
             <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>
-              Require {biometricLabel} Unlock
+              Require {biometricLabel} on Launch
             </Text>
             <Switch
               value={biometricEnabled}

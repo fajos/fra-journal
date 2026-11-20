@@ -13,25 +13,31 @@ export async function isBiometricsAvailable(): Promise<boolean> {
 }
 
 /**
- * Returns a human-friendly name of the biometric modality supported by this device
- * (e.g. 'Face ID', 'Touch ID', 'Fingerprint', 'Face Unlock').
+ * Returns a human-friendly name of the biometric and device lock modality supported by this device
+ * (e.g. 'Face ID / Passcode', 'Touch ID / Passcode', 'Fingerprint / PIN', 'Biometrics / PIN').
  */
 export async function getBiometricLabel(): Promise<string> {
   if (Platform.OS === 'web') return 'Passcode';
   try {
     const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-      return Platform.OS === 'ios' ? 'Face ID' : 'Face Recognition';
+    const hasFace = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+    const hasFingerprint = types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+
+    if (hasFace && hasFingerprint) {
+      return Platform.OS === 'ios' ? 'Biometrics (Face ID / Passcode)' : 'Biometrics (Fingerprint / Face / PIN)';
     }
-    if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-      return Platform.OS === 'ios' ? 'Touch ID' : 'Fingerprint';
+    if (hasFace) {
+      return Platform.OS === 'ios' ? 'Face ID / Passcode' : 'Face Recognition / PIN';
+    }
+    if (hasFingerprint) {
+      return Platform.OS === 'ios' ? 'Touch ID / Passcode' : 'Fingerprint / PIN';
     }
     if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) {
-      return 'Iris Scanner';
+      return 'Iris Scanner / PIN';
     }
-    return 'Passcode';
+    return 'Biometrics / Screen Lock';
   } catch {
-    return 'Biometrics';
+    return 'Biometrics / Screen Lock';
   }
 }
 
@@ -50,10 +56,12 @@ export async function authenticateWithBiometrics(
 
     let prompt = customPromptMessage;
     if (!prompt) {
-      if (hasFace) {
-        prompt = Platform.OS === 'ios' ? 'Unlock with Face ID' : 'Unlock with Face Recognition';
+      if (hasFace && hasFingerprint) {
+        prompt = Platform.OS === 'ios' ? 'Unlock with Face ID or Passcode' : 'Unlock with Fingerprint, Face or PIN';
+      } else if (hasFace) {
+        prompt = Platform.OS === 'ios' ? 'Unlock with Face ID or Passcode' : 'Unlock with Face Recognition or PIN';
       } else if (hasFingerprint) {
-        prompt = Platform.OS === 'ios' ? 'Scan Touch ID to unlock' : 'Touch fingerprint sensor to unlock';
+        prompt = Platform.OS === 'ios' ? 'Unlock with Touch ID or Passcode' : 'Touch fingerprint sensor or enter PIN';
       } else {
         prompt = 'Unlock your private journal';
       }

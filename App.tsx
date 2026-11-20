@@ -201,11 +201,11 @@ function AppContent() {
           Journal Protected
         </Text>
         <Text style={[styles.lockedSubtitle, { color: theme.colors.textMuted }]}>
-          This private journal is locked with {biometricLabel}.
+          This private journal is protected with {biometricLabel}.
         </Text>
         <Pressable onPress={handleUnlock} style={[styles.unlockBtn, { backgroundColor: theme.colors.primary }]}>
           <ShieldCheck size={16} color="#FFFFFF" />
-          <Text style={styles.unlockBtnText}>Unlock with {biometricLabel}</Text>
+          <Text style={styles.unlockBtnText}>Unlock Journal</Text>
         </Pressable>
       </View>
     );
