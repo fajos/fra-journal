@@ -61,7 +61,7 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
 
   const handleApplyDecomposition = (plan: DecomposedPlan) => {
     if (!currentGoal) return;
-    const updated = applyDecompositionToGoal(currentGoal, plan);
+    const updated = applyDecompositionToGoal(currentGoal, plan, state.year);
     const updatedGoals = {
       ...state.goals,
       [selectedArea]: updated,

@@ -212,7 +212,7 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
                 <View style={[styles.coverageBadge, { backgroundColor: '#10B98115', borderColor: '#10B98140' }]}>
                   <Check size={14} color="#10B981" />
                   <Text style={[styles.coverageBadgeText, { color: '#10B981' }]}>
-                    Includes 4 Quarters, 12 Months &amp; all Weekly Planners (Weeks 1–5 for every month)
+                    Full calendar coverage: 4 Quarters, 12 Months &amp; exact Weekly Planners (4 or 5 weeks per month)
                   </Text>
                 </View>
 

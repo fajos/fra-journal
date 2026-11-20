@@ -112,7 +112,7 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   const handleApplyDecomposition = (plan: DecomposedPlan) => {
     const current = state.goals[aiTargetArea];
     if (!current) return;
-    const updated = applyDecompositionToGoal(current, plan);
+    const updated = applyDecompositionToGoal(current, plan, state.year);
     const updatedGoals = {
       ...state.goals,
       [aiTargetArea]: updated,
