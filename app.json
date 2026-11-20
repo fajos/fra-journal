@@ -10,12 +10,14 @@
       "backgroundColor": "#FAF7F2"
     },
     "ios": {
+      "bundleIdentifier": "com.fajostech.ejournal",
       "supportsTablet": true,
       "infoPlist": {
         "NSFaceIDUsageDescription": "Allow Reflective E-Journal to use Face ID to authenticate and protect your private journal entries."
       }
     },
     "android": {
+      "package": "com.fajostech.ejournal",
       "adaptiveIcon": {
         "backgroundColor": "#FAF7F2",
         "foregroundImage": "./assets/android-icon-foreground.png",
