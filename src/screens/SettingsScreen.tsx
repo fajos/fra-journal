@@ -8,6 +8,7 @@ import {
   TextInput,
   Switch,
   Platform,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalState } from '../types/journal';
@@ -59,12 +60,8 @@ import { Modal, ActivityIndicator } from 'react-native';
 import {
   CloudUser,
   getCloudUser,
-  cloudLogin,
-  cloudRegister,
   cloudLogout,
   syncWithCloud,
-  getServerUrl,
-  setServerUrl,
 } from '../services/cloudSyncService';
 import {
   saveReminderSettings,
@@ -101,15 +98,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   // Cloud & Sync states
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
-  const [serverUrl, setLocalServerUrl] = useState('https://kws2026.vercel.app');
   const [syncLoading, setSyncLoading] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authFullName, setAuthFullName] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState('');
 
   // Email Reminders states
   const [reminderFreq, setReminderFreq] = useState<'weekly' | 'daily' | 'monthly' | 'disabled'>('weekly');
@@ -139,8 +128,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
       const user = await getCloudUser();
       setCloudUser(user);
-      const url = await getServerUrl();
-      setLocalServerUrl(url);
 
       if (user) {
         const rem = await fetchReminderSettings();
@@ -234,51 +221,48 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setSyncLoading(false);
     if (res.success) {
       hapticFeedback.success();
-      showStatus(res.message || 'Synced with Turso cloud successfully!');
+      showStatus(res.message || 'Synced with cloud successfully!');
     } else {
       hapticFeedback.error();
       showStatus(res.message || 'Cloud sync failed.');
     }
   };
 
-  const handleCloudAuth = async () => {
-    setAuthLoading(true);
-    setAuthError('');
-    if (authMode === 'login') {
-      const res = await cloudLogin(authEmail, authPassword);
-      setAuthLoading(false);
-      if (res.success && res.user) {
-        setCloudUser(res.user);
-        setShowAuthModal(false);
-        hapticFeedback.success();
-        showStatus(`Logged in as ${res.user.email}!`);
-        await syncWithCloud(state);
-      } else {
-        setAuthError(res.error || 'Login failed');
+  const confirmLogout = () => {
+    hapticFeedback.medium();
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        'Log Out of E-Journal?\n\nAll journal data will be cleared from this device for your privacy. Your entries remain safely backed up in the cloud and will be restored when you sign in again.'
+      );
+      if (confirmed) {
+        handleCloudLogout();
       }
     } else {
-      const res = await cloudRegister(authEmail, authPassword, authFullName);
-      setAuthLoading(false);
-      if (res.success && res.user) {
-        setCloudUser(res.user);
-        setShowAuthModal(false);
-        hapticFeedback.success();
-        showStatus(`Account created for ${res.user.email}!`);
-        await syncWithCloud(state);
-      } else {
-        setAuthError(res.error || 'Registration failed');
-      }
+      Alert.alert(
+        'Log Out of E-Journal?',
+        'All journal data will be cleared from this device for your privacy and security. Your goals remain safely backed up in your cloud account and will be restored when you sign in again.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Log Out & Clear Device',
+            style: 'destructive',
+            onPress: handleCloudLogout,
+          },
+        ]
+      );
     }
   };
 
   const handleCloudLogout = async () => {
     hapticFeedback.selection();
-    await cloudLogout();
-    setCloudUser(null);
-    showStatus('Logged out of cloud account.');
     if (onLogout) {
-      onLogout();
+      await onLogout();
+    } else {
+      await cloudLogout();
+      await resetJournalState();
+      setCloudUser(null);
     }
+    showStatus('Logged out and device storage cleared.');
   };
 
   const handleSaveReminderSettings = async () => {
@@ -677,7 +661,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Pressable>
         </View>
 
-        {/* Cloud Account & Turso Storage Sync */}
+        {/* User Account Profile Card */}
         <View
           style={[
             styles.card,
@@ -687,75 +671,82 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             },
           ]}
         >
-          <View style={styles.cardHeader}>
-            <Cloud size={18} color={theme.colors.primary} />
-            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
-              Cloud Account & Turso Storage
-            </Text>
-          </View>
-          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Sync your journal with the web app so your goals, quarters, and weeks are always up to date across all your devices.
-          </Text>
-
-          <View style={[styles.statusBox, { backgroundColor: cloudUser ? theme.colors.primaryLight : theme.colors.linedPaper, marginBottom: 12 }]}>
-            <Cloud size={15} color={cloudUser ? theme.colors.primary : theme.colors.textMuted} />
-            <Text style={[styles.statusText, { color: cloudUser ? theme.colors.primary : theme.colors.textDark, flex: 1 }]}>
-              {cloudUser ? `Signed in as ${cloudUser.email}` : 'Running in Offline Guest Mode'}
-            </Text>
-            {cloudUser && (
-              <Pressable onPress={handleCloudLogout} hitSlop={6}>
-                <LogOut size={14} color={theme.colors.danger} />
-              </Pressable>
-            )}
-          </View>
-
-          <View style={styles.buttonRow}>
-            {cloudUser ? (
-              <Pressable
-                onPress={handleSyncCloud}
-                disabled={syncLoading}
-                style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1 }]}
+          <View style={styles.profileHeaderRow}>
+            <View style={[styles.profileAvatar, { backgroundColor: theme.colors.primary }]}>
+              <Text style={styles.profileAvatarText}>
+                {cloudUser?.full_name
+                  ? cloudUser.full_name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)
+                  : 'ME'}
+              </Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text
+                style={[
+                  styles.profileName,
+                  { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
+                ]}
               >
-                {syncLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <RefreshCw size={14} color="#FFFFFF" />
-                )}
-                <Text style={styles.buttonPrimaryText}>Sync to Cloud Now</Text>
-              </Pressable>
-            ) : (
-              <Pressable
-                onPress={() => setShowAuthModal(true)}
-                style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1 }]}
-              >
-                <LogIn size={14} color="#FFFFFF" />
-                <Text style={styles.buttonPrimaryText}>Log In / Create Account</Text>
-              </Pressable>
-            )}
+                {cloudUser?.full_name || 'E-Journal Member'}
+              </Text>
+              <Text style={[styles.profileEmail, { color: theme.colors.textMuted }]}>
+                {cloudUser?.email || ''}
+              </Text>
+              <View style={[styles.memberBadge, { backgroundColor: theme.colors.primaryLight }]}>
+                <Text style={[styles.memberBadgeText, { color: theme.colors.primary }]}>
+                  ★ Kingdom Wealth Summit Member
+                </Text>
+              </View>
+            </View>
           </View>
 
-          {/* Server URL Config */}
-          <View style={{ marginTop: 12 }}>
-            <Text style={[styles.switchSub, { color: theme.colors.textMuted, marginBottom: 4 }]}>
-              Web App / Backend Server URL:
+          {/* Sync Status Banner */}
+          <View
+            style={[
+              styles.syncStatusBox,
+              { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.cardBorder },
+            ]}
+          >
+            <ShieldCheck size={16} color={theme.colors.primary} />
+            <Text style={[styles.syncStatusText, { color: theme.colors.textDark }]}>
+              Journal connected &amp; automatically backed up to cloud.
             </Text>
-            <TextInput
-              value={serverUrl}
-              onChangeText={(t) => {
-                setLocalServerUrl(t);
-                setServerUrl(t);
-              }}
-              placeholder="http://localhost:3000"
-              placeholderTextColor={theme.colors.textLight}
+          </View>
+
+          {/* Actions: Sync Now & Logout */}
+          <View style={styles.profileActionsRow}>
+            <Pressable
+              onPress={handleSyncCloud}
+              disabled={syncLoading}
               style={[
-                styles.keyInputSmall,
-                {
-                  color: theme.colors.textDark,
-                  backgroundColor: theme.colors.primaryLight,
-                  borderColor: theme.colors.cardBorder,
-                },
+                styles.syncNowBtn,
+                { backgroundColor: theme.colors.linedPaper, borderColor: theme.colors.cardBorder },
               ]}
-            />
+            >
+              {syncLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <RefreshCw size={14} color={theme.colors.primary} />
+              )}
+              <Text style={[styles.syncNowBtnText, { color: theme.colors.textDark }]}>
+                Sync Changes to Cloud Now
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={confirmLogout}
+              style={[
+                styles.logoutBtn,
+                { backgroundColor: theme.colors.primaryLight, borderColor: '#EF4444' },
+              ]}
+            >
+              <LogOut size={15} color="#EF4444" />
+              <Text style={styles.logoutBtnText}>Log Out &amp; Clear Device Data</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -840,34 +831,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </View>
         </View>
 
-        {/* AI Goal Decomposition Settings */}
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.colors.cardBackground,
-              borderColor: theme.colors.cardBorder,
-            },
-          ]}
-        >
-          <View style={styles.cardHeader}>
-            <Sparkles size={18} color="#D97706" />
-            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
-              AI Goal Decomposition
-            </Text>
-          </View>
-          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Intelligently cascades your yearly goals into quarterly milestones, monthly targets, and 7-day weekly habits.
-          </Text>
-
-          <View style={[styles.statusBox, { backgroundColor: theme.colors.primaryLight, marginBottom: 0 }]}>
-            <Sparkles size={15} color="#D97706" />
-            <Text style={[styles.statusText, { color: theme.colors.textDark }]}>
-              Powered by server environment variables (DeepSeek / OpenAI on Vercel) with instant offline fallback.
-            </Text>
-          </View>
-        </View>
-
         {/* Backup & Restore */}
         <View
           style={[
@@ -948,132 +911,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Pressable>
         </View>
       </View>
-
-      {/* Cloud Auth Modal */}
-      <Modal visible={showAuthModal} transparent animationType="fade" onRequestClose={() => setShowAuthModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.authCard,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.cardBorder,
-              },
-            ]}
-          >
-            <View style={styles.authModalHeader}>
-              <View style={styles.authTitleRow}>
-                <Cloud size={18} color={theme.colors.primary} />
-                <Text
-                  style={[
-                    styles.authTitle,
-                    { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
-                  ]}
-                >
-                  {authMode === 'login' ? 'Sign In to Your Journal' : 'Create Cloud Journal Account'}
-                </Text>
-              </View>
-              <Pressable onPress={() => setShowAuthModal(false)} hitSlop={8}>
-                <X size={18} color={theme.colors.textMuted} />
-              </Pressable>
-            </View>
-
-            {authError ? (
-              <View style={[styles.statusBox, { backgroundColor: '#FDE8E8', borderColor: '#F8B4B4', marginBottom: 10 }]}>
-                <Text style={[styles.statusText, { color: '#C81E1E' }]}>{authError}</Text>
-              </View>
-            ) : null}
-
-            {authMode === 'register' && (
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: theme.colors.textDark }]}>Full Name</Text>
-                <TextInput
-                  value={authFullName}
-                  onChangeText={setAuthFullName}
-                  placeholder="Your full name"
-                  placeholderTextColor={theme.colors.textLight}
-                  style={[
-                    styles.textInputFull,
-                    {
-                      color: theme.colors.textDark,
-                      backgroundColor: theme.colors.primaryLight,
-                      borderColor: theme.colors.cardBorder,
-                    },
-                  ]}
-                />
-              </View>
-            )}
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.colors.textDark }]}>Email Address</Text>
-              <TextInput
-                value={authEmail}
-                onChangeText={setAuthEmail}
-                placeholder="name@example.com"
-                placeholderTextColor={theme.colors.textLight}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={[
-                  styles.textInputFull,
-                  {
-                    color: theme.colors.textDark,
-                    backgroundColor: theme.colors.primaryLight,
-                    borderColor: theme.colors.cardBorder,
-                  },
-                ]}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.colors.textDark }]}>Password</Text>
-              <TextInput
-                value={authPassword}
-                onChangeText={setAuthPassword}
-                placeholder="••••••••"
-                placeholderTextColor={theme.colors.textLight}
-                secureTextEntry
-                style={[
-                  styles.textInputFull,
-                  {
-                    color: theme.colors.textDark,
-                    backgroundColor: theme.colors.primaryLight,
-                    borderColor: theme.colors.cardBorder,
-                  },
-                ]}
-              />
-            </View>
-
-            <Pressable
-              onPress={handleCloudAuth}
-              disabled={authLoading}
-              style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, marginTop: 12 }]}
-            >
-              {authLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <LogIn size={15} color="#FFFFFF" />
-              )}
-              <Text style={styles.buttonPrimaryText}>
-                {authMode === 'login' ? 'Sign In & Sync' : 'Create Account & Sync'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                setAuthMode(authMode === 'login' ? 'register' : 'login');
-                setAuthError('');
-              }}
-              style={{ marginTop: 12, alignItems: 'center' }}
-            >
-              <Text style={{ fontSize: 12, color: theme.colors.primary, fontWeight: '600' }}>
-                {authMode === 'login'
-                  ? "Don't have an account? Create one"
-                  : 'Already have an account? Sign In'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 };
@@ -1397,5 +1234,88 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 13,
+  },
+  profileHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  profileAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  profileName: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  profileEmail: {
+    fontSize: 12.5,
+    marginBottom: 6,
+  },
+  memberBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  memberBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  syncStatusBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  syncStatusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+  },
+  profileActionsRow: {
+    flexDirection: 'column',
+    gap: 10,
+  },
+  syncNowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  syncNowBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  logoutBtnText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

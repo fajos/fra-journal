@@ -28,14 +28,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Optional Server URL configuration
-  const [showServerConfig, setShowServerConfig] = useState(false);
-  const [serverInput, setServerInput] = useState('https://kws2026.vercel.app');
-
-  React.useEffect(() => {
-    getServerUrl().then((url) => setServerInput(url));
-  }, []);
-
   const handleSubmit = async () => {
     setErrorMsg('');
     if (!email.trim() || !password) {
@@ -51,10 +43,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
     setLoading(true);
 
     try {
-      if (showServerConfig && serverInput.trim()) {
-        await setServerUrl(serverInput.trim());
-      }
-
       const res =
         authMode === 'login'
           ? await cloudLogin(email, password)
@@ -259,50 +247,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             </Pressable>
           </View>
 
-          {/* Server Config Toggle (for local dev / custom backend domain) */}
-          <Pressable
-            onPress={() => setShowServerConfig(!showServerConfig)}
-            style={styles.serverToggleRow}
-          >
-            <Globe size={13} color={theme.colors.textMuted} />
-            <Text style={[styles.serverToggleText, { color: theme.colors.textMuted }]}>
-              Server Settings
-            </Text>
-            {showServerConfig ? (
-              <ChevronUp size={13} color={theme.colors.textMuted} />
-            ) : (
-              <ChevronDown size={13} color={theme.colors.textMuted} />
-            )}
-          </Pressable>
-
-          {showServerConfig && (
-            <View style={styles.serverConfigBox}>
-              <Text style={[styles.serverConfigLabel, { color: theme.colors.textMuted }]}>
-                Backend Host URL (Default: http://localhost:3000)
-              </Text>
-              <TextInput
-                value={serverInput}
-                onChangeText={setServerInput}
-                placeholder="http://localhost:3000"
-                placeholderTextColor={theme.colors.textLight}
-                autoCapitalize="none"
-                style={[
-                  styles.serverInput,
-                  {
-                    color: theme.colors.textDark,
-                    backgroundColor: theme.colors.linedPaper,
-                    borderColor: theme.colors.cardBorder,
-                  },
-                ]}
-              />
-            </View>
-          )}
-
           {/* Privacy Footnote */}
           <View style={styles.footnoteRow}>
             <ShieldCheck size={14} color={theme.colors.primary} />
             <Text style={[styles.footnoteText, { color: theme.colors.textMuted }]}>
-              Encrypted cloud storage powered by Turso SQLite.
+              Secure cloud backup &amp; bi-directional multi-device sync.
             </Text>
           </View>
         </View>

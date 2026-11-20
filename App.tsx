@@ -15,6 +15,7 @@ import {
   loadJournalState,
   saveJournalState,
   createInitialJournalState,
+  clearLocalJournalStorage,
   getWeeksForMonth,
 } from './src/storage/journalStorage';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -28,6 +29,7 @@ import {
   syncWithCloud,
   getCloudToken,
   getCloudUser,
+  cloudLogout,
   fetchCloudState,
   CloudUser,
 } from './src/services/cloudSyncService';
@@ -147,6 +149,15 @@ function AppContent() {
     );
   }
 
+  const handleLogout = async () => {
+    hapticFeedback.medium();
+    await cloudLogout();
+    await clearLocalJournalStorage();
+    const fresh = createInitialJournalState();
+    setState(fresh);
+    setCloudUser(null);
+  };
+
   // Mandatory Authentication Gate: user must log in or register before accessing the journal
   if (!cloudUser) {
     return (
@@ -155,12 +166,16 @@ function AppContent() {
         <AuthScreen
           onAuthenticated={async (u) => {
             setCloudUser(u);
-            const cloudRes = await fetchCloudState(state.year);
+            const targetYear = new Date().getFullYear();
+            const cloudRes = await fetchCloudState(targetYear);
             if (cloudRes.success && cloudRes.state) {
               setState(cloudRes.state);
               await saveJournalState(cloudRes.state);
             } else {
-              await syncWithCloud(state);
+              const fresh = createInitialJournalState(targetYear);
+              setState(fresh);
+              await saveJournalState(fresh);
+              await syncWithCloud(fresh);
             }
           }}
         />
@@ -298,7 +313,7 @@ function AppContent() {
           <SettingsScreen
             state={state}
             onUpdateState={handleUpdateState}
-            onLogout={() => setCloudUser(null)}
+            onLogout={handleLogout}
           />
         );
       default:

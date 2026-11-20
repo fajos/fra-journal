@@ -419,9 +419,21 @@ export async function saveJournalState(state: JournalState): Promise<void> {
   }
 }
 
+export async function clearLocalJournalStorage(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    console.error('Failed to clear local journal storage:', err);
+  }
+}
+
 export async function resetJournalState(): Promise<JournalState> {
   const fresh = createInitialJournalState();
-  await saveJournalState(fresh);
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    console.error('Failed to reset journal state in storage:', err);
+  }
   return fresh;
 }
 
