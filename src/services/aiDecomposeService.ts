@@ -44,7 +44,7 @@ export interface DecomposedPlan {
 export async function decomposeGoal(
   area: LifeArea,
   goalText: string,
-  year: number = 2026
+  year: number = new Date().getFullYear()
 ): Promise<DecomposedPlan> {
   const cleanGoal = goalText.trim() || `Excel in ${area}`;
 
