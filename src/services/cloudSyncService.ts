@@ -106,6 +106,46 @@ export async function cloudLogout(): Promise<void> {
 }
 
 /**
+ * Fetch journal state from Turso cloud for a specific year
+ */
+export async function fetchCloudState(year: number): Promise<{
+  success: boolean;
+  state?: JournalState;
+  availableYears?: number[];
+  error?: string;
+}> {
+  try {
+    const token = await getCloudToken();
+    if (!token) {
+      return { success: false, error: 'Not logged in' };
+    }
+
+    const baseUrl = await getServerUrl();
+    const res = await fetch(`${baseUrl}/api/journal/state?year=${year}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        await cloudLogout();
+      }
+      return { success: false, error: 'Failed to fetch cloud state' };
+    }
+
+    const data = await res.json();
+    return {
+      success: true,
+      state: data.state || undefined,
+      availableYears: data.availableYears || [],
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+/**
  * Synchronize local state with cloud state in Turso.
  * If cloud has data, merges or pulls latest; also pushes local changes to cloud.
  */

@@ -79,11 +79,13 @@ const CADENCE_MONTH_KEY = '@ejournal_cadence_month';
 interface SettingsScreenProps {
   state: JournalState;
   onUpdateState: (newState: JournalState) => void;
+  onLogout?: () => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   state,
   onUpdateState,
+  onLogout,
 }) => {
   const { theme, themeKey, setThemeKey } = useTheme();
   const [jsonInput, setJsonInput] = useState('');
@@ -274,6 +276,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     await cloudLogout();
     setCloudUser(null);
     showStatus('Logged out of cloud account.');
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   const handleSaveReminderSettings = async () => {

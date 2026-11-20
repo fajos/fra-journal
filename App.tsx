@@ -24,7 +24,13 @@ import {
   getBiometricLabel,
 } from './src/services/biometricsService';
 import { hapticFeedback } from './src/services/hapticsService';
-import { syncWithCloud, getCloudToken } from './src/services/cloudSyncService';
+import {
+  syncWithCloud,
+  getCloudToken,
+  getCloudUser,
+  fetchCloudState,
+  CloudUser,
+} from './src/services/cloudSyncService';
 import { ShieldCheck, Lock } from 'lucide-react-native';
 
 // Screens
@@ -35,12 +41,14 @@ import { MonthPlanScreen } from './src/screens/MonthPlanScreen';
 import { WeekPlanScreen } from './src/screens/WeekPlanScreen';
 import { MonthReviewScreen } from './src/screens/MonthReviewScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { AuthScreen } from './src/screens/AuthScreen';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
 
 function AppContent() {
   const { theme, isDark } = useTheme();
   const [loading, setLoading] = useState(true);
+  const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
   const [locked, setLocked] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState('Biometrics');
   const [state, setState] = useState<JournalState>(createInitialJournalState());
@@ -71,13 +79,25 @@ function AppContent() {
         }
       }
 
+      // Check if user is logged into Turso cloud account
+      const user = await getCloudUser();
+      setCloudUser(user);
+
       const loaded = await loadJournalState();
       setState(loaded);
-      getCloudToken().then((tok) => {
-        if (tok) {
-          syncWithCloud(loaded).catch(() => {});
-        }
-      });
+
+      if (user) {
+        // Automatically sync or restore user data from cloud
+        fetchCloudState(loaded.year).then(async (res) => {
+          if (res.success && res.state) {
+            setState(res.state);
+            await saveJournalState(res.state);
+          } else {
+            syncWithCloud(loaded).catch(() => {});
+          }
+        }).catch(() => {});
+      }
+
       setLoading(false);
     }
     initialize();
@@ -124,6 +144,27 @@ function AppContent() {
           Opening your journal...
         </Text>
       </View>
+    );
+  }
+
+  // Mandatory Authentication Gate: user must log in or register before accessing the journal
+  if (!cloudUser) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <AuthScreen
+          onAuthenticated={async (u) => {
+            setCloudUser(u);
+            const cloudRes = await fetchCloudState(state.year);
+            if (cloudRes.success && cloudRes.state) {
+              setState(cloudRes.state);
+              await saveJournalState(cloudRes.state);
+            } else {
+              await syncWithCloud(state);
+            }
+          }}
+        />
+      </SafeAreaView>
     );
   }
 
@@ -257,6 +298,7 @@ function AppContent() {
           <SettingsScreen
             state={state}
             onUpdateState={handleUpdateState}
+            onLogout={() => setCloudUser(null)}
           />
         );
       default:
