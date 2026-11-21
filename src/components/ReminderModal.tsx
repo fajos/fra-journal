@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Modal,
   Pressable,
 } from 'react-native';
+import { Text } from './AppText';
 import { useTheme } from '../context/ThemeContext';
 import {
   scheduleMilestoneReminder,

@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TextInput,
   Pressable,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
+import { Text, TextInput } from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
 import { CloudUser, cloudLogin, cloudRegister, getServerUrl, setServerUrl } from '../services/cloudSyncService';
 import { hapticFeedback } from '../services/hapticsService';

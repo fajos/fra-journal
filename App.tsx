@@ -3,10 +3,10 @@ import {
   StyleSheet,
   View,
   ActivityIndicator,
-  Text,
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from './src/components/AppText';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';

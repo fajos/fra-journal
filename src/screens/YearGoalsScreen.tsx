@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   Pressable,
   Modal,
   useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '../components/AppText';
 import { LifeArea, LIFE_AREAS, JournalState } from '../types/journal';
 import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';

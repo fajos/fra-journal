@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from './AppText';
 import Svg, { Polygon, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { JournalState, LifeArea } from '../types/journal';
 import { useTheme } from '../context/ThemeContext';

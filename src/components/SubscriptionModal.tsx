@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
-  Text,
   StyleSheet,
   Pressable,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+import { Text } from './AppText';
 import {
   Sparkles,
   ShieldCheck,

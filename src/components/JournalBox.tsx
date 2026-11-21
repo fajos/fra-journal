@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import { Text, TextInput } from './AppText';
 import { useTheme } from '../context/ThemeContext';
 
 interface JournalBoxProps {

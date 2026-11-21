@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Modal, Pressable, ScrollView } from 'react-native';
+import { Text } from './AppText';
 import { useTheme } from '../context/ThemeContext';
 import { Sparkles, X, ChevronRight } from 'lucide-react-native';
 import { hapticFeedback } from '../services/hapticsService';

@@ -108,7 +108,7 @@ export const THEMES: Record<ThemeKey, AppTheme> = {
   },
 
   pureLight: {
-    name: 'Pure Minimalist White',
+    name: 'Pure Minimalist Light',
     key: 'pureLight',
     isDark: false,
     colors: {
@@ -217,4 +217,45 @@ export const THEMES: Record<ThemeKey, AppTheme> = {
 };
 
 // Default backward-compatible fallback
-export const THEME = THEMES.warmPaper;
+export const THEME = THEMES.pureLight;
+
+export type FontSizeKey = 'small' | 'default' | 'large' | 'extraLarge';
+
+export interface FontSizeOption {
+  key: FontSizeKey;
+  label: string;
+  badge: string;
+  scale: number;
+  description: string;
+}
+
+export const FONT_SIZE_OPTIONS: Record<FontSizeKey, FontSizeOption> = {
+  small: {
+    key: 'small',
+    label: 'Compact',
+    badge: '90%',
+    scale: 0.9,
+    description: 'Smaller font to fit more content on screen',
+  },
+  default: {
+    key: 'default',
+    label: 'Standard',
+    badge: '100%',
+    scale: 1.0,
+    description: 'Default balanced size for daily journaling',
+  },
+  large: {
+    key: 'large',
+    label: 'Large',
+    badge: '115%',
+    scale: 1.15,
+    description: 'Comfortable & enlarged for easier reading',
+  },
+  extraLarge: {
+    key: 'extraLarge',
+    label: 'Extra Large',
+    badge: '130%',
+    scale: 1.3,
+    description: 'Maximum readability & bold high-legibility text',
+  },
+};

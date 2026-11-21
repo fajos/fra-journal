@@ -1,12 +1,11 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Pressable,
-  TextInput,
 } from 'react-native';
+import { Text, TextInput } from '../components/AppText';
 import { JournalState, LifeArea, QuarterPlan } from '../types/journal';
 import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';

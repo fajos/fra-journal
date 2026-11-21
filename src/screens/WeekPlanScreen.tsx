@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   Pressable,
 } from 'react-native';
+import { Text, TextInput } from '../components/AppText';
 import { JournalState, LifeArea, WeekPlan, DayKey } from '../types/journal';
 import { useTheme } from '../context/ThemeContext';
 import { FloralHeader } from '../components/FloralHeader';

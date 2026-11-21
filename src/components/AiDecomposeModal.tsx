@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Modal,
   Pressable,
-  TextInput,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { Text, TextInput } from './AppText';
 import { Sparkles, X, Check, Brain, Key, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { LifeArea } from '../types/journal';

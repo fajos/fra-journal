@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import { Text } from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
 import {
   Sparkles,

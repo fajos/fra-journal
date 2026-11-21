@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { TextInput } from './AppText';
 import { Check } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { hapticFeedback } from '../services/hapticsService';

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Text } from './AppText';
 import { LifeArea, LIFE_AREAS } from '../types/journal';
 import { useTheme } from '../context/ThemeContext';
 import {

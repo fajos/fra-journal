@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Pressable,
-  TextInput,
   Switch,
   Platform,
   Alert,
 } from 'react-native';
+import { Text, TextInput } from '../components/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalState } from '../types/journal';
 import { THEMES, ThemeKey } from '../constants/theme';
@@ -42,6 +41,7 @@ import {
   Bell,
   Archive,
   Plus,
+  ALargeSmall,
   Palette,
   Sun,
   Moon,
@@ -94,7 +94,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onUpdateState,
   onLogout,
 }) => {
-  const { theme, themeKey, setThemeKey } = useTheme();
+  const { theme, themeKey, setThemeKey, fontSizeKey, setFontSizeKey, fontSizeOptions } = useTheme();
   const [jsonInput, setJsonInput] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -428,16 +428,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   const themeList: { key: ThemeKey; title: string; desc: string; icon: any }[] = [
     {
+      key: 'pureLight',
+      title: 'Pure Minimalist Light',
+      desc: 'Clean daylight white with crisp contrast and modern indigo accents (Default).',
+      icon: Sun,
+    },
+    {
       key: 'warmPaper',
       title: 'Warm Linen Paper',
       desc: 'The original physical journal look with dusty rose and warm taupe tones.',
       icon: Feather,
-    },
-    {
-      key: 'pureLight',
-      title: 'Pure Minimalist Light',
-      desc: 'Clean daylight white with crisp contrast and modern indigo accents.',
-      icon: Sun,
     },
     {
       key: 'midnightDark',
@@ -538,6 +538,114 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </Pressable>
               );
             })}
+          </View>
+        </View>
+
+        {/* Text Size & Readability Card */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <ALargeSmall size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Text Size & Readability
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Adjust font scaling across all journal cards, planning lists, and reflections:
+          </Text>
+
+          {/* Font Size Options */}
+          <View style={styles.fontSizeGrid}>
+            {(Object.keys(fontSizeOptions) as (keyof typeof fontSizeOptions)[]).map((key) => {
+              const opt = fontSizeOptions[key];
+              const isSelected = fontSizeKey === key;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setFontSizeKey(key)}
+                  style={[
+                    styles.fontSizeOptionCard,
+                    {
+                      backgroundColor: isSelected ? theme.colors.primaryLight : theme.colors.cardBackground,
+                      borderColor: isSelected ? theme.colors.primary : theme.colors.cardBorder,
+                      borderWidth: isSelected ? 2 : 1,
+                    },
+                  ]}
+                >
+                  <View style={styles.fontSizeHeader}>
+                    <Text
+                      style={[
+                        styles.fontSizeLabel,
+                        {
+                          color: isSelected ? theme.colors.primary : theme.colors.textDark,
+                          fontWeight: isSelected ? '700' : '600',
+                        },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                    <View
+                      style={[
+                        styles.fontSizeBadge,
+                        {
+                          backgroundColor: isSelected ? theme.colors.primary : (theme.isDark ? '#2E2E36' : '#E2E8F0'),
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.fontSizeBadgeText,
+                          { color: isSelected ? '#FFFFFF' : theme.colors.textMuted },
+                        ]}
+                      >
+                        {opt.badge}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.fontSizeDesc, { color: theme.colors.textMuted }]}>
+                    {opt.description}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Dynamic Live Preview Container */}
+          <View
+            style={[
+              styles.fontPreviewContainer,
+              {
+                backgroundColor: theme.colors.background,
+                borderColor: theme.colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.fontPreviewHeader}>
+              <Text style={[styles.fontPreviewTag, { color: theme.colors.primary }]}>
+                LIVE PREVIEW ({fontSizeOptions[fontSizeKey]?.badge})
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.fontPreviewHeading,
+                {
+                  color: theme.colors.textDark,
+                  fontFamily: theme.typography.fontFamilySerif,
+                },
+              ]}
+            >
+              2026 Yearly Intentions & Balance
+            </Text>
+            <Text style={[styles.fontPreviewBody, { color: theme.colors.textMuted }]}>
+              "Small, consistent daily disciplines compound into monumental life breakthroughs."
+            </Text>
           </View>
         </View>
 
@@ -1229,6 +1337,59 @@ const styles = StyleSheet.create({
   },
   themesGrid: {
     gap: 10,
+  },
+  fontSizeGrid: {
+    gap: 10,
+  },
+  fontSizeOptionCard: {
+    borderRadius: 10,
+    padding: 12,
+  },
+  fontSizeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  fontSizeLabel: {
+    fontSize: 14,
+  },
+  fontSizeBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  fontSizeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  fontSizeDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  fontPreviewContainer: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  fontPreviewHeader: {
+    marginBottom: 6,
+  },
+  fontPreviewTag: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  fontPreviewHeading: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  fontPreviewBody: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 19,
   },
   themeOptionCard: {
     borderRadius: 10,
