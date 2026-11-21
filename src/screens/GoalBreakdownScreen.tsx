@@ -29,8 +29,6 @@ import {
   HelpCircle,
   Trash2,
 } from 'lucide-react-native';
-import { AiDecomposeModal } from '../components/AiDecomposeModal';
-import { applyDecompositionToGoal, DecomposedPlan } from '../services/aiDecomposeService';
 
 interface GoalBreakdownScreenProps {
   state: JournalState;
@@ -56,29 +54,6 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
   const [activeMilestoneTitle, setActiveMilestoneTitle] = useState('');
   const [promptsModalVisible, setPromptsModalVisible] = useState(false);
   const [promptContext, setPromptContext] = useState<'whyItMatters' | 'supportNeeded'>('whyItMatters');
-  const [showAiModal, setShowAiModal] = useState(false);
-
-  const handleApplyDecomposition = (plan: DecomposedPlan) => {
-    try {
-      const current = currentGoal || state.goals[selectedArea];
-      if (!current) return;
-      const updated = applyDecompositionToGoal(current, plan, state.year);
-      const updatedGoals = {
-        ...state.goals,
-        [selectedArea]: updated,
-      };
-      onUpdateState({
-        ...state,
-        goals: updatedGoals,
-        yearsData: {
-          ...(state.yearsData || {}),
-          [state.year]: updatedGoals,
-        },
-      });
-    } catch (err) {
-      console.error('Failed to apply decomposition in GoalBreakdownScreen:', err);
-    }
-  };
 
   const currentGoal = state.goals[selectedArea];
   if (!currentGoal) return null;
@@ -187,21 +162,11 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
             },
           ]}
         >
-          <View style={styles.headerBetween}>
-            <View style={styles.sectionHeader}>
-              <Target size={17} color={theme.colors.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
-                My goal
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => setShowAiModal(true)}
-              style={[styles.aiPill, { backgroundColor: theme.colors.primaryLight }]}
-              hitSlop={6}
-            >
-              <Sparkles size={12} color="#D97706" />
-              <Text style={[styles.aiPillText, { color: theme.colors.primary }]}>✨ Auto-Decompose with AI</Text>
-            </Pressable>
+          <View style={styles.sectionHeader}>
+            <Target size={17} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              My goal
+            </Text>
           </View>
           <TextInput
             value={currentGoal.text}
@@ -397,16 +362,6 @@ export const GoalBreakdownScreen: React.FC<GoalBreakdownScreenProps> = ({
         contextType={promptContext}
         onSelectPrompt={handleInsertPrompt}
       />
-
-      {/* AI Decomposition Modal */}
-      <AiDecomposeModal
-        visible={showAiModal}
-        onClose={() => setShowAiModal(false)}
-        area={selectedArea}
-        initialGoalText={currentGoal.text || ''}
-        year={state.year}
-        onApply={handleApplyDecomposition}
-      />
     </ScrollView>
   );
 };
@@ -417,18 +372,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
-  },
-  aiPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  aiPillText: {
-    fontSize: 11,
-    fontWeight: '700',
   },
   formContainer: {
     paddingHorizontal: 16,
