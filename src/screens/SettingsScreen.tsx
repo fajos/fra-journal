@@ -60,9 +60,7 @@ import {
 } from 'lucide-react-native';
 import {
   checkForAppUpdates,
-  getUpdatesStatus,
   reloadAppAsync,
-  UpdateStatusInfo,
 } from '../services/updatesService';
 import { Modal, ActivityIndicator } from 'react-native';
 import {
@@ -117,8 +115,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [reminderDay, setReminderDay] = useState('Monday');
   const [reminderLoading, setReminderLoading] = useState(false);
 
-  // Over-The-Air Updates states
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatusInfo>(() => getUpdatesStatus());
+  // Updates states
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateReady, setUpdateReady] = useState(false);
 
@@ -254,7 +251,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     } else {
       showStatus(res.message);
     }
-    setUpdateStatus(getUpdatesStatus());
   };
 
   const handleApplyUpdate = async () => {
@@ -1097,7 +1093,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           />
         </View>
 
-        {/* App Version & Over-The-Air Updates */}
+        {/* App Version & Updates */}
         <View
           style={[
             styles.card,
@@ -1114,27 +1110,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </Text>
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Over-the-air updates ensure bug fixes, new features, and design improvements download instantly without waiting for App Store or Google Play releases.
+            Ensure your journal is running the latest version with new templates, performance enhancements, and bug fixes.
           </Text>
 
-          {/* Details Row: Version, Channel, OTA Status */}
-          <View style={[styles.updateDetailsBox, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.cardBorder }]}>
-            <View style={styles.updateDetailCol}>
-              <Text style={[styles.updateDetailLabel, { color: theme.colors.textMuted }]}>Version</Text>
-              <Text style={[styles.updateDetailVal, { color: theme.colors.textDark }]}>v1.0.0</Text>
-            </View>
-            <View style={styles.updateDetailCol}>
-              <Text style={[styles.updateDetailLabel, { color: theme.colors.textMuted }]}>Channel</Text>
-              <Text style={[styles.updateDetailVal, { color: theme.colors.primary, textTransform: 'capitalize' }]}>
-                {updateStatus.channel || (updateStatus.isEnabled ? 'Production' : 'Expo Go / Local')}
-              </Text>
-            </View>
-            <View style={styles.updateDetailCol}>
-              <Text style={[styles.updateDetailLabel, { color: theme.colors.textMuted }]}>OTA Sync</Text>
-              <Text style={[styles.updateDetailVal, { color: updateStatus.isEnabled ? '#16A34A' : theme.colors.textMuted }]}>
-                {updateStatus.isEnabled ? 'Active' : 'Standby'}
-              </Text>
-            </View>
+          {/* Version Info Row */}
+          <View style={[styles.updateVersionRow, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.cardBorder }]}>
+            <Text style={[styles.updateVersionLabel, { color: theme.colors.textDark }]}>App Version</Text>
+            <Text style={[styles.updateVersionVal, { color: theme.colors.primary }]}>v1.0.0</Text>
           </View>
 
           {updateReady ? (
@@ -1615,26 +1597,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  updateDetailsBox: {
+  updateVersionRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 10,
     borderWidth: 1,
-    marginTop: 6,
+    marginTop: 4,
   },
-  updateDetailCol: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  updateDetailLabel: {
-    fontSize: 11,
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  updateDetailVal: {
+  updateVersionLabel: {
     fontSize: 13,
+    fontWeight: '600',
+  },
+  updateVersionVal: {
+    fontSize: 13.5,
     fontWeight: '700',
   },
   proStatusBanner: {
