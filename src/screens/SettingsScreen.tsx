@@ -43,6 +43,7 @@ import {
   Plus,
   ALargeSmall,
   Palette,
+  Clock,
   Sun,
   Moon,
   Feather,
@@ -76,7 +77,11 @@ import {
   sendTestReminder,
   fetchReminderSettings,
 } from '../services/remindersService';
-import { restoreUserPurchases } from '../services/subscriptionService';
+import {
+  restoreUserPurchases,
+  getSubscriptionStatusDetails,
+  SubscriptionStatusDetails,
+} from '../services/subscriptionService';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
@@ -122,6 +127,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   // Subscription states
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [restoringSubscription, setRestoringSubscription] = useState(false);
+  const [subDetails, setSubDetails] = useState<SubscriptionStatusDetails | null>(null);
+
+  useEffect(() => {
+    getSubscriptionStatusDetails(cloudUser).then(setSubDetails);
+  }, [cloudUser]);
 
   const rollingYears = getRollingYears();
   const allStoredYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
@@ -264,6 +274,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const res = await restoreUserPurchases();
     const updated = await refreshCloudUser();
     if (updated) setCloudUser(updated);
+    const freshDetails = await getSubscriptionStatusDetails(updated || cloudUser);
+    setSubDetails(freshDetails);
     setRestoringSubscription(false);
     showStatus(res.message);
   };
@@ -271,6 +283,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const handleSubscriptionSuccess = async () => {
     const updated = await refreshCloudUser();
     if (updated) setCloudUser(updated);
+    const freshDetails = await getSubscriptionStatusDetails(updated || cloudUser);
+    setSubDetails(freshDetails);
     showStatus('Reflective E-Journal Pro activated! Thank you.');
   };
 
@@ -875,13 +889,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             styles.card,
             {
               backgroundColor: theme.colors.cardBackground,
-              borderColor: cloudUser?.is_pro ? '#16A34A' : theme.colors.cardBorder,
-              borderWidth: cloudUser?.is_pro ? 1.5 : 1,
+              borderColor: (subDetails?.isPro || cloudUser?.is_pro) ? '#16A34A' : theme.colors.cardBorder,
+              borderWidth: (subDetails?.isPro || cloudUser?.is_pro) ? 1.5 : 1,
             },
           ]}
         >
           <View style={styles.cardHeader}>
-            <Sparkles size={18} color={cloudUser?.is_pro ? '#16A34A' : theme.colors.primary} />
+            <Sparkles size={18} color={(subDetails?.isPro || cloudUser?.is_pro) ? '#16A34A' : theme.colors.primary} />
             <Text
               style={[
                 styles.cardTitle,
@@ -892,30 +906,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </Text>
           </View>
 
-          {cloudUser?.is_pro ? (
+          {(subDetails?.isPro || cloudUser?.is_pro) ? (
             <View>
               <View style={[styles.proStatusBanner, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}>
-                <Sparkles size={16} color="#15803D" />
-                <View style={{ flex: 1, marginLeft: 8 }}>
+                <Sparkles size={18} color="#15803D" />
+                <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={[styles.proStatusTitle, { color: '#15803D' }]}>
                     Reflective E-Journal Pro Active
                   </Text>
                   <Text style={[styles.proStatusSub, { color: '#166534' }]}>
-                    {cloudUser.subscription?.platform
-                      ? `Billed via ${
-                          cloudUser.subscription.platform === 'apple_iap'
-                            ? 'Apple App Store'
-                            : cloudUser.subscription.platform === 'google_play'
-                            ? 'Google Play'
-                            : cloudUser.subscription.platform === 'stripe'
-                            ? 'Web / Stripe'
-                            : cloudUser.subscription.platform
-                        }`
-                      : 'Unified cross-platform subscription active'}
-                    {cloudUser.subscription?.current_period_end
-                      ? ` • Renews ${new Date(cloudUser.subscription.current_period_end).toLocaleDateString()}`
-                      : ''}
+                    Billed via {subDetails?.platformName || (cloudUser?.subscription?.platform === 'apple_iap' ? 'Apple App Store' : cloudUser?.subscription?.platform === 'google_play' ? 'Google Play' : 'App Store')}
                   </Text>
+                  {subDetails?.expirationFormatted ? (
+                    <View style={styles.expiryRow}>
+                      <Clock size={12} color="#166534" style={{ marginRight: 4 }} />
+                      <Text style={[styles.expiryText, { color: '#166534' }]}>
+                        {subDetails.willRenew ? 'Next Renewal: ' : 'Expires: '}
+                        <Text style={{ fontWeight: '700' }}>{subDetails.expirationFormatted}</Text>
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
 
@@ -1281,7 +1291,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
       <SubscriptionModal
         visible={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
+        onClose={() => {
+          setShowSubscriptionModal(false);
+          getSubscriptionStatusDetails(cloudUser).then(setSubDetails);
+        }}
         onSuccess={handleSubscriptionSuccess}
       />
     </ScrollView>
@@ -1791,5 +1804,14 @@ const styles = StyleSheet.create({
   proStatusSub: {
     fontSize: 11.5,
     marginTop: 2,
+  },
+  expiryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  expiryText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 });

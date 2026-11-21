@@ -34,7 +34,7 @@ import {
   refreshCloudUser,
   CloudUser,
 } from './src/services/cloudSyncService';
-import { initSubscriptions } from './src/services/subscriptionService';
+import { initSubscriptions, checkIsUserPro } from './src/services/subscriptionService';
 import { ShieldCheck, Lock } from 'lucide-react-native';
 
 // Screens
@@ -53,6 +53,7 @@ function AppContent() {
   const { theme, isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
+  const [isPro, setIsPro] = useState(false);
   const [locked, setLocked] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState('Biometrics');
   const [state, setState] = useState<JournalState>(createInitialJournalState());
@@ -98,10 +99,17 @@ function AppContent() {
       const user = await getCloudUser();
       setCloudUser(user);
 
+      // Verify pro entitlement across RevenueCat and Cloud
+      const pro = await checkIsUserPro(user);
+      setIsPro(pro);
+
       if (user) {
         // Refresh subscription & profile from cloud in background
         refreshCloudUser().then((updated) => {
-          if (updated) setCloudUser(updated);
+          if (updated) {
+            setCloudUser(updated);
+            checkIsUserPro(updated).then(setIsPro);
+          }
         }).catch(() => {});
       }
 
@@ -229,6 +237,7 @@ function AppContent() {
         return (
           <YearGoalsScreen
             state={state}
+            isPro={isPro}
             onUpdateState={handleUpdateState}
             onNavigateToBreakdown={(area) => {
               setSelectedArea(area);

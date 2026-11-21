@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -41,9 +41,11 @@ import {
 } from 'lucide-react-native';
 import { AiDecomposeModal } from '../components/AiDecomposeModal';
 import { applyDecompositionToGoal, DecomposedPlan } from '../services/aiDecomposeService';
+import { checkIsUserPro } from '../services/subscriptionService';
 
 interface YearGoalsScreenProps {
   state: JournalState;
+  isPro?: boolean;
   onUpdateState: (newState: JournalState) => void;
   onNavigateToBreakdown: (area: LifeArea) => void;
   onNavigateToQuarter: (area: LifeArea, quarter: 1 | 2 | 3 | 4) => void;
@@ -53,6 +55,7 @@ interface YearGoalsScreenProps {
 
 export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   state,
+  isPro,
   onUpdateState,
   onNavigateToBreakdown,
   onNavigateToQuarter,
@@ -63,6 +66,13 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   const isWide = width >= 768;
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<'cards' | 'radar'>('cards');
+  const [localIsPro, setLocalIsPro] = useState(isPro ?? false);
+
+  useEffect(() => {
+    checkIsUserPro().then((pro) => {
+      if (pro) setLocalIsPro(true);
+    });
+  }, []);
 
   const [showYearPickerModal, setShowYearPickerModal] = useState(false);
   const [customYearInput, setCustomYearInput] = useState('');
@@ -200,6 +210,7 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         subtitle="Circle your top three"
         year={state.year}
         onPressYear={() => setShowYearPickerModal(true)}
+        isPro={Boolean(isPro || localIsPro)}
       />
 
       {/* Top Banner with View Switcher */}

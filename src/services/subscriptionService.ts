@@ -192,3 +192,107 @@ export async function checkIsUserPro(cloudUser?: CloudUser | null): Promise<bool
 
   return false;
 }
+
+export interface SubscriptionStatusDetails {
+  isPro: boolean;
+  platformName: string;
+  expirationDate: string | null;
+  expirationFormatted: string | null; // e.g. "November 21, 2027 at 11:30 AM"
+  willRenew: boolean;
+  isLifetime: boolean;
+}
+
+function formatSubscriptionDateTime(dateInput: string | Date | null | undefined): string | null {
+  if (!dateInput) return null;
+  const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (isNaN(d.getTime())) return null;
+
+  const datePart = d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  const timePart = d.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${datePart} at ${timePart}`;
+}
+
+/**
+ * Returns comprehensive subscription metadata including platform,
+ * exact expiry/renewal date, and time.
+ */
+export async function getSubscriptionStatusDetails(
+  cloudUser?: CloudUser | null
+): Promise<SubscriptionStatusDetails> {
+  // 1. Check local RevenueCat entitlement (Apple IAP / Google Play)
+  if (Platform.OS !== 'web' && isConfigured) {
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      const entitlement = customerInfo.entitlements.active[PRO_ENTITLEMENT_ID];
+      if (entitlement) {
+        const store = entitlement.store;
+        const platformName =
+          store === 'APP_STORE'
+            ? 'Apple App Store'
+            : store === 'PLAY_STORE'
+            ? 'Google Play'
+            : store === 'STRIPE'
+            ? 'Web / Stripe'
+            : 'In-App Purchase';
+
+        const expirationFormatted = entitlement.expirationDate
+          ? formatSubscriptionDateTime(entitlement.expirationDate)
+          : 'Lifetime Access (Never expires)';
+
+        return {
+          isPro: true,
+          platformName,
+          expirationDate: entitlement.expirationDate,
+          expirationFormatted,
+          willRenew: entitlement.willRenew,
+          isLifetime: !entitlement.expirationDate,
+        };
+      }
+    } catch (e) {
+      console.warn('[RevenueCat Details Error]:', e);
+    }
+  }
+
+  // 2. Check Cloud user subscription status from central backend (Web / Stripe)
+  if (cloudUser?.is_pro) {
+    const rawEnd = cloudUser.subscription?.current_period_end;
+    const platform = cloudUser.subscription?.platform;
+    const platformName =
+      platform === 'apple_iap'
+        ? 'Apple App Store'
+        : platform === 'google_play'
+        ? 'Google Play'
+        : platform === 'stripe'
+        ? 'Web / Stripe'
+        : 'Cloud Pro Subscription';
+
+    const expirationFormatted = rawEnd
+      ? formatSubscriptionDateTime(rawEnd)
+      : 'Active (Check store for exact date)';
+
+    return {
+      isPro: true,
+      platformName,
+      expirationDate: rawEnd || null,
+      expirationFormatted,
+      willRenew: true,
+      isLifetime: false,
+    };
+  }
+
+  return {
+    isPro: false,
+    platformName: 'Free Starter Plan',
+    expirationDate: null,
+    expirationFormatted: null,
+    willRenew: false,
+    isLifetime: false,
+  };
+}

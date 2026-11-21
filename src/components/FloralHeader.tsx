@@ -1,15 +1,17 @@
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Image } from 'react-native';
 import { Text } from './AppText';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
-import { Calendar, ChevronDown } from 'lucide-react-native';
+import { Calendar, ChevronDown, Sparkles } from 'lucide-react-native';
 
 interface FloralHeaderProps {
   title: string;
   subtitle?: string;
   year?: number;
   onPressYear?: () => void;
+  isPro?: boolean;
+  showLogo?: boolean;
 }
 
 export const FloralFlower = ({ size = 28, color, opacity = 0.85 }: { size?: number; color?: string; opacity?: number }) => {
@@ -33,6 +35,8 @@ export const FloralHeader: React.FC<FloralHeaderProps> = ({
   subtitle,
   year,
   onPressYear,
+  isPro,
+  showLogo = true,
 }) => {
   const { theme } = useTheme();
 
@@ -40,17 +44,25 @@ export const FloralHeader: React.FC<FloralHeaderProps> = ({
     <View style={styles.container}>
       <View style={styles.topRow}>
         <View style={styles.titleArea}>
-          <Text
-            style={[
-              styles.title,
-              {
-                color: theme.colors.textDark,
-                fontFamily: theme.typography.fontFamilySerif,
-              },
-            ]}
-          >
-            {title}
-          </Text>
+          <View style={styles.titleWithBadgeRow}>
+            {isPro && (
+              <View style={[styles.proBadge, { backgroundColor: theme.colors.primary }]}>
+                <Sparkles size={11} color="#FFFFFF" strokeWidth={2.5} />
+                <Text style={styles.proBadgeText}>PRO</Text>
+              </View>
+            )}
+            <Text
+              style={[
+                styles.title,
+                {
+                  color: theme.colors.textDark,
+                  fontFamily: theme.typography.fontFamilySerif,
+                },
+              ]}
+            >
+              {title}
+            </Text>
+          </View>
           {subtitle ? (
             <Text
               style={[
@@ -89,7 +101,13 @@ export const FloralHeader: React.FC<FloralHeaderProps> = ({
               )}
             </Pressable>
           ) : null}
-          <FloralFlower size={34} />
+          {showLogo ? (
+            <Image
+              source={require('../../assets/icon-512-transparent.png')}
+              style={styles.appLogo}
+              resizeMode="contain"
+            />
+          ) : null}
         </View>
       </View>
       <View style={[styles.dividerLine, { backgroundColor: theme.colors.cardBorder }]} />
@@ -111,6 +129,27 @@ const styles = StyleSheet.create({
   titleArea: {
     flex: 1,
     paddingRight: 10,
+  },
+  titleWithBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  proBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    marginBottom: 2,
+  },
+  proBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   title: {
     fontSize: 26,
@@ -142,6 +181,11 @@ const styles = StyleSheet.create({
   yearText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  appLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
   },
   dividerLine: {
     height: 1,

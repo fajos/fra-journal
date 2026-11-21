@@ -48,9 +48,11 @@ export function calculateAreaScore(goal: any): number {
 export const LifeBalanceRadar: React.FC<LifeBalanceRadarProps> = ({ state, onSelectArea }) => {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
-  const size = Math.min(width - 48, 340);
+  // Ensure the chart fits within the card width even with large padding and margins
+  const cardInnerWidth = Math.max(250, width - 64);
+  const size = Math.min(cardInnerWidth, 290);
   const center = size / 2;
-  const radius = center - 42;
+  const radius = center - 48;
 
   const activeAreas = getActiveGoalAreas(state);
 
@@ -176,18 +178,18 @@ export const LifeBalanceRadar: React.FC<LifeBalanceRadarProps> = ({ state, onSel
 
           {dataPoints.map((p, i) => {
             const area = areaScores[i];
-            const labelR = radius + 24;
+            const labelR = radius + 20;
             const lx = center + labelR * Math.cos(p.angle);
             const ly = center + labelR * Math.sin(p.angle);
 
             return (
               <React.Fragment key={area.key}>
-                <Circle cx={p.x} cy={p.y} r="4" fill={theme.colors.primary} />
+                <Circle cx={p.x} cy={p.y} r="3.5" fill={theme.colors.primary} />
                 <SvgText
                   x={lx}
-                  y={ly + 4}
+                  y={ly + 3.5}
                   fill={theme.colors.textDark}
-                  fontSize="9.5"
+                  fontSize="9"
                   fontWeight="600"
                   textAnchor="middle"
                 >
@@ -270,27 +272,35 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 6,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 160,
   },
   title: {
     fontSize: 16,
     fontWeight: '700',
+    flexShrink: 1,
   },
   scoreBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
     borderWidth: 1,
+    flexShrink: 0,
+    alignSelf: 'flex-start',
   },
   scoreText: {
     fontSize: 11,
@@ -305,15 +315,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 4,
+    overflow: 'hidden',
   },
   insightsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 12,
     marginBottom: 12,
   },
   insightBox: {
     flex: 1,
+    minWidth: 130,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -341,7 +354,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   areaPill: {
-    width: '48.5%',
+    flex: 1,
+    minWidth: 135,
+    maxWidth: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -353,10 +368,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     flex: 1,
+    marginRight: 4,
   },
   pillScore: {
     fontSize: 11,
     fontWeight: '700',
-    marginLeft: 4,
+    flexShrink: 0,
   },
 });
