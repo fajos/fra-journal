@@ -31,8 +31,10 @@ import {
   getCloudUser,
   cloudLogout,
   fetchCloudState,
+  refreshCloudUser,
   CloudUser,
 } from './src/services/cloudSyncService';
+import { initSubscriptions } from './src/services/subscriptionService';
 import { ShieldCheck, Lock } from 'lucide-react-native';
 
 // Screens
@@ -89,9 +91,19 @@ function AppContent() {
         }
       }
 
+      // Initialize RevenueCat SDK
+      await initSubscriptions();
+
       // Check if user is logged into Turso cloud account
       const user = await getCloudUser();
       setCloudUser(user);
+
+      if (user) {
+        // Refresh subscription & profile from cloud in background
+        refreshCloudUser().then((updated) => {
+          if (updated) setCloudUser(updated);
+        }).catch(() => {});
+      }
 
       const loaded = await loadJournalState();
       setState(loaded);

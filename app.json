@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Reflective E-Journal",
+    "name": "FRA Journal",
     "slug": "e-journal",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,7 +22,8 @@
       "bundleIdentifier": "com.fajostech.ejournal",
       "supportsTablet": true,
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Allow Reflective E-Journal to use Face ID to authenticate and protect your private journal entries."
+        "NSFaceIDUsageDescription": "Allow Reflective E-Journal to use Face ID to authenticate and protect your private journal entries.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

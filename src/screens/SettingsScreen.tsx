@@ -71,12 +71,15 @@ import {
   cloudLogout,
   cloudDeleteAccount,
   syncWithCloud,
+  refreshCloudUser,
 } from '../services/cloudSyncService';
 import {
   saveReminderSettings,
   sendTestReminder,
   fetchReminderSettings,
 } from '../services/remindersService';
+import { restoreUserPurchases } from '../services/subscriptionService';
+import { SubscriptionModal } from '../components/SubscriptionModal';
 
 const BIOMETRIC_KEY = '@ejournal_biometric_enabled';
 const CADENCE_SUNDAY_KEY = '@ejournal_cadence_sunday';
@@ -118,6 +121,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [updateStatus, setUpdateStatus] = useState<UpdateStatusInfo>(() => getUpdatesStatus());
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateReady, setUpdateReady] = useState(false);
+
+  // Subscription states
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [restoringSubscription, setRestoringSubscription] = useState(false);
 
   const rollingYears = getRollingYears();
   const allStoredYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
@@ -253,6 +260,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const handleApplyUpdate = async () => {
     hapticFeedback.success();
     await reloadAppAsync();
+  };
+
+  const handleRestoreSub = async () => {
+    hapticFeedback.selection();
+    setRestoringSubscription(true);
+    const res = await restoreUserPurchases();
+    const updated = await refreshCloudUser();
+    if (updated) setCloudUser(updated);
+    setRestoringSubscription(false);
+    showStatus(res.message);
+  };
+
+  const handleSubscriptionSuccess = async () => {
+    const updated = await refreshCloudUser();
+    if (updated) setCloudUser(updated);
+    showStatus('Reflective E-Journal Pro activated! Thank you.');
   };
 
   const handleSyncCloud = async () => {
@@ -742,6 +765,102 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Pressable>
         </View>
 
+        {/* Pro Membership & Subscription Card */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: cloudUser?.is_pro ? '#16A34A' : theme.colors.cardBorder,
+              borderWidth: cloudUser?.is_pro ? 1.5 : 1,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <Sparkles size={18} color={cloudUser?.is_pro ? '#16A34A' : theme.colors.primary} />
+            <Text
+              style={[
+                styles.cardTitle,
+                { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
+              ]}
+            >
+              Membership & Subscription
+            </Text>
+          </View>
+
+          {cloudUser?.is_pro ? (
+            <View>
+              <View style={[styles.proStatusBanner, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}>
+                <Sparkles size={16} color="#15803D" />
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={[styles.proStatusTitle, { color: '#15803D' }]}>
+                    Reflective E-Journal Pro Active
+                  </Text>
+                  <Text style={[styles.proStatusSub, { color: '#166534' }]}>
+                    {cloudUser.subscription?.platform
+                      ? `Billed via ${
+                          cloudUser.subscription.platform === 'apple_iap'
+                            ? 'Apple App Store'
+                            : cloudUser.subscription.platform === 'google_play'
+                            ? 'Google Play'
+                            : cloudUser.subscription.platform === 'stripe'
+                            ? 'Web / Stripe'
+                            : cloudUser.subscription.platform
+                        }`
+                      : 'Unified cross-platform subscription active'}
+                    {cloudUser.subscription?.current_period_end
+                      ? ` • Renews ${new Date(cloudUser.subscription.current_period_end).toLocaleDateString()}`
+                      : ''}
+                  </Text>
+                </View>
+              </View>
+
+              <Pressable
+                onPress={handleRestoreSub}
+                disabled={restoringSubscription}
+                style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, marginTop: 10 }]}
+              >
+                {restoringSubscription ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : (
+                  <RotateCcw size={14} color={theme.colors.primary} />
+                )}
+                <Text style={[styles.buttonSecondaryText, { color: theme.colors.primary }]}>
+                  {restoringSubscription ? 'Checking stores...' : 'Sync & Restore Purchases'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View>
+              <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+                You are currently on the Free Starter plan. Upgrade to Pro to unlock unlimited AI goal decomposition, real-time multi-device cloud sync, printable annual keepsakes, and automated email reminders.
+              </Text>
+
+              <View style={styles.buttonRow}>
+                <Pressable
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setShowSubscriptionModal(true);
+                  }}
+                  style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1.5 }]}
+                >
+                  <Sparkles size={15} color="#FFFFFF" />
+                  <Text style={styles.buttonPrimaryText}>Upgrade to Pro</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleRestoreSub}
+                  disabled={restoringSubscription}
+                  style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, flex: 1 }]}
+                >
+                  <RotateCcw size={14} color={theme.colors.textDark} />
+                  <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>Restore</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+
         {/* User Account Profile Card */}
         <View
           style={[
@@ -1069,6 +1188,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Pressable>
         </View>
       </View>
+
+      <SubscriptionModal
+        visible={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        onSuccess={handleSubscriptionSuccess}
+      />
     </ScrollView>
   );
 };
@@ -1511,5 +1636,21 @@ const styles = StyleSheet.create({
   updateDetailVal: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  proStatusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  proStatusTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  proStatusSub: {
+    fontSize: 11.5,
+    marginTop: 2,
   },
 });

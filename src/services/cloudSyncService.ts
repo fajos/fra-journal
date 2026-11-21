@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalState } from '../types/journal';
+import { identifyUser, resetUser } from './subscriptionService';
 
 const TOKEN_KEY = '@ejournal_cloud_token';
 const USER_KEY = '@ejournal_cloud_user';
@@ -13,6 +14,15 @@ export interface CloudUser {
   full_name: string;
   is_kws_member?: boolean;
   membership_tag?: string;
+  is_pro?: boolean;
+  subscription?: {
+    id?: number;
+    status: string;
+    tier: string;
+    platform: string;
+    current_period_end?: string;
+    cancel_at_period_end?: boolean;
+  } | null;
 }
 
 export async function getServerUrl(): Promise<string> {
@@ -66,6 +76,10 @@ export async function cloudLogin(email: string, password: string): Promise<{ suc
     await AsyncStorage.setItem(TOKEN_KEY, data.token);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
 
+    if (data.user?.id) {
+      await identifyUser(data.user.id);
+    }
+
     return { success: true, user: data.user };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network connection failed' };
@@ -93,14 +107,42 @@ export async function cloudRegister(
     await AsyncStorage.setItem(TOKEN_KEY, data.token);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
 
+    if (data.user?.id) {
+      await identifyUser(data.user.id);
+    }
+
     return { success: true, user: data.user };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network connection failed' };
   }
 }
 
+export async function refreshCloudUser(): Promise<CloudUser | null> {
+  try {
+    const token = await getCloudToken();
+    if (!token) return null;
+    const baseUrl = await getServerUrl();
+    const res = await fetch(`${baseUrl}/api/journal/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.user) {
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      if (data.user.id) {
+        await identifyUser(data.user.id);
+      }
+      return data.user;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function cloudLogout(): Promise<void> {
   try {
+    await resetUser();
     await AsyncStorage.removeItem(TOKEN_KEY);
     await AsyncStorage.removeItem(USER_KEY);
   } catch (err) {
