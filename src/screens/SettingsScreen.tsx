@@ -845,7 +845,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1.5 }]}
                 >
                   <Sparkles size={15} color="#FFFFFF" />
-                  <Text style={styles.buttonPrimaryText}>Upgrade to Pro</Text>
+                  <Text style={styles.buttonPrimaryText}>Upgrade to Pro ($6.99/yr)</Text>
                 </Pressable>
 
                 <Pressable

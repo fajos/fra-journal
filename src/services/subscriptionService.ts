@@ -8,7 +8,7 @@ import Purchases, {
 import { CloudUser } from './cloudSyncService';
 
 // Public API keys for RevenueCat (can be overridden via Expo environment variables)
-const RC_APPLE_KEY = process.env.EXPO_PUBLIC_RC_APPLE_KEY || 'appl_placeholder_key';
+const RC_APPLE_KEY = process.env.EXPO_PUBLIC_RC_APPLE_KEY || 'appl_vYRQKPxXqkMNOmLVLSLdeMkclcT';
 const RC_GOOGLE_KEY = process.env.EXPO_PUBLIC_RC_GOOGLE_KEY || 'goog_placeholder_key';
 
 export const PRO_ENTITLEMENT_ID = 'pro';

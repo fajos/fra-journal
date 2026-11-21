@@ -12,13 +12,15 @@ import {
 } from 'react-native';
 import {
   Sparkles,
-  Check,
   ShieldCheck,
   Cloud,
   Bell,
   Printer,
   X,
   RotateCcw,
+  ExternalLink,
+  FileText,
+  Lock,
 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { hapticFeedback } from '../services/hapticsService';
@@ -44,7 +46,6 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -65,36 +66,27 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     setTimeout(() => setStatusMsg(null), 4500);
   };
 
-  // Find annual and monthly package from RevenueCat or fallback
+  // Find annual package from RevenueCat or fallback to $6.99/year
   const annualPkg = packages.find(
     (p) =>
       p.packageType === 'ANNUAL' ||
       p.identifier.toLowerCase().includes('annual') ||
       p.identifier.toLowerCase().includes('year')
-  );
-  const monthlyPkg = packages.find(
-    (p) =>
-      p.packageType === 'MONTHLY' ||
-      p.identifier.toLowerCase().includes('monthly') ||
-      p.identifier.toLowerCase().includes('month')
-  );
+  ) || packages[0];
 
-  const annualPrice = annualPkg?.product?.priceString || '$39.99/yr';
-  const monthlyPrice = monthlyPkg?.product?.priceString || '$4.99/mo';
+  const annualPrice = annualPkg?.product?.priceString || '$6.99 / year';
 
   const handlePurchase = async () => {
     hapticFeedback.selection();
     setLoading(true);
 
-    const pkgToBuy = selectedPlan === 'annual' ? (annualPkg || packages[0]) : (monthlyPkg || packages[0]);
-
-    if (!pkgToBuy) {
+    if (!annualPkg) {
       setLoading(false);
-      showStatus('In-app purchase packages are currently syncing with app stores. Please try again in a moment.');
+      showStatus('In-app purchase packages are syncing with the store. Please try again in a moment.');
       return;
     }
 
-    const res = await purchaseSubscriptionPackage(pkgToBuy);
+    const res = await purchaseSubscriptionPackage(annualPkg);
     setLoading(false);
 
     if (res.success && res.isPro) {
@@ -158,7 +150,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </Text>
               <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
                 {featureReason ||
-                  'Deepen your focus, unlock intelligent annual planning, and keep your journals synced securely across all your devices.'}
+                  'Deepen your focus, unlock intelligent annual planning, and keep your life reflections backed up and accessible across Web, iOS, and Android.'}
               </Text>
             </View>
 
@@ -174,13 +166,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               {[
                 {
                   icon: Sparkles,
-                  title: 'Unlimited Intelligent Goal Breakdowns',
+                  title: 'Unlimited Intelligent Goal Decompositions',
                   desc: 'Automatically break yearly goals into quarterly milestones, monthly targets, and weekly action steps.',
                 },
                 {
                   icon: Cloud,
                   title: 'Unified Multi-Device Cloud Sync',
-                  desc: 'Subscribe once, use everywhere on iOS, Android, and Web with real-time cloud backup.',
+                  desc: 'Subscribe once, use everywhere on Web, iPhone, iPad, and Android with automatic cloud backup.',
                 },
                 {
                   icon: Printer,
@@ -195,7 +187,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 {
                   icon: ShieldCheck,
                   title: 'Biometric Security & Infinite Archives',
-                  desc: 'Protect deep reflections with Face ID/Fingerprint and archive unlimited future and past years.',
+                  desc: 'Protect deep reflections with Face ID / Fingerprint and archive unlimited future and past years.',
                 },
               ].map((f, idx) => (
                 <View key={idx} style={styles.featureItem}>
@@ -210,74 +202,46 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               ))}
             </View>
 
-            {/* Subscription Plan Switcher */}
-            <View style={styles.plansContainer}>
-              {/* Annual Plan (Best Value) */}
-              <Pressable
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setSelectedPlan('annual');
-                }}
-                style={[
-                  styles.planCard,
-                  {
-                    borderColor: selectedPlan === 'annual' ? theme.colors.primary : theme.colors.cardBorder,
-                    backgroundColor:
-                      selectedPlan === 'annual' ? theme.colors.primaryLight : theme.colors.cardBackground,
-                  },
-                ]}
-              >
-                <View style={styles.planHeaderRow}>
-                  <View style={styles.radioOuter}>
-                    {selectedPlan === 'annual' && (
-                      <View style={[styles.radioInner, { backgroundColor: theme.colors.primary }]} />
-                    )}
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <View style={styles.planTitleRow}>
-                      <Text style={[styles.planTitle, { color: theme.colors.textDark }]}>Annual Access</Text>
-                      <View style={[styles.savingsBadge, { backgroundColor: '#16A34A' }]}>
-                        <Text style={styles.savingsBadgeText}>SAVE 33% • BEST VALUE</Text>
-                      </View>
+            {/* Single Annual Subscription Card ($6.99 / Year) */}
+            <View
+              style={[
+                styles.planCard,
+                {
+                  borderColor: theme.colors.primary,
+                  backgroundColor: theme.colors.primaryLight,
+                },
+              ]}
+            >
+              <View style={styles.planHeaderRow}>
+                <View style={[styles.planIconWrap, { backgroundColor: theme.colors.primary }]}>
+                  <Sparkles size={18} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <View style={styles.planTitleRow}>
+                    <Text
+                      style={[
+                        styles.planTitle,
+                        { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
+                      ]}
+                    >
+                      Annual Pro Access
+                    </Text>
+                    <View style={[styles.savingsBadge, { backgroundColor: '#16A34A' }]}>
+                      <Text style={styles.savingsBadgeText}>ALL-INCLUSIVE</Text>
                     </View>
-                    <Text style={[styles.planPriceSub, { color: theme.colors.textMuted }]}>
-                      Billed annually • Works on Web, iOS & Android
-                    </Text>
                   </View>
+                  <Text style={[styles.planPriceSub, { color: theme.colors.textMuted }]}>
+                    $6.99 billed annually • Just ~$0.58 / month
+                  </Text>
+                  <Text style={[styles.planScopeSub, { color: theme.colors.primary }]}>
+                    ✓ Works on iOS, Android & Web
+                  </Text>
+                </View>
+                <View style={styles.priceCol}>
                   <Text style={[styles.planPrice, { color: theme.colors.primary }]}>{annualPrice}</Text>
+                  <Text style={[styles.priceTerm, { color: theme.colors.textMuted }]}>per year</Text>
                 </View>
-              </Pressable>
-
-              {/* Monthly Plan */}
-              <Pressable
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setSelectedPlan('monthly');
-                }}
-                style={[
-                  styles.planCard,
-                  {
-                    borderColor: selectedPlan === 'monthly' ? theme.colors.primary : theme.colors.cardBorder,
-                    backgroundColor:
-                      selectedPlan === 'monthly' ? theme.colors.primaryLight : theme.colors.cardBackground,
-                  },
-                ]}
-              >
-                <View style={styles.planHeaderRow}>
-                  <View style={styles.radioOuter}>
-                    {selectedPlan === 'monthly' && (
-                      <View style={[styles.radioInner, { backgroundColor: theme.colors.primary }]} />
-                    )}
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={[styles.planTitle, { color: theme.colors.textDark }]}>Monthly Plan</Text>
-                    <Text style={[styles.planPriceSub, { color: theme.colors.textMuted }]}>
-                      Billed monthly • Cancel anytime
-                    </Text>
-                  </View>
-                  <Text style={[styles.planPrice, { color: theme.colors.primary }]}>{monthlyPrice}</Text>
-                </View>
-              </Pressable>
+              </View>
             </View>
 
             {/* CTA Subscribe Button */}
@@ -292,7 +256,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <>
                   <Sparkles size={16} color="#FFFFFF" />
                   <Text style={styles.subscribeBtnText}>
-                    {selectedPlan === 'annual' ? `Start Annual Plan (${annualPrice})` : `Subscribe (${monthlyPrice})`}
+                    Subscribe for {annualPrice}
                   </Text>
                 </>
               )}
@@ -304,7 +268,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <ActivityIndicator size="small" color={theme.colors.textMuted} />
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <RotateCcw size={12} color={theme.colors.textMuted} />
+                  <RotateCcw size={13} color={theme.colors.textMuted} />
                   <Text style={[styles.restoreBtnText, { color: theme.colors.textMuted }]}>
                     Already subscribed? Restore Purchases
                   </Text>
@@ -312,23 +276,34 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               )}
             </Pressable>
 
-            {/* Legal Disclosures (Apple Review Mandatory Guidelines 3.1.2) */}
-            <View style={styles.legalSection}>
-              <Text style={[styles.legalText, { color: theme.colors.textLight }]}>
-                Subscription automatically renews unless cancelled at least 24 hours before the end of the current
-                billing period. Payment will be charged to your {Platform.OS === 'ios' ? 'Apple ID' : 'Google Play'}{' '}
-                account. You can manage or cancel your subscription at any time in your account settings.
+            {/* Prominent Legal Links: Terms of Use & Privacy Policy */}
+            <View style={[styles.legalLinksCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.cardBorder }]}>
+              <Text style={[styles.legalCardHeader, { color: theme.colors.textDark }]}>
+                Legal & Subscription Information
               </Text>
-
-              <View style={styles.legalLinksRow}>
-                <Pressable onPress={() => openUrl('https://kws2026.vercel.app/terms')}>
-                  <Text style={[styles.legalLink, { color: theme.colors.primary }]}>Terms of Service</Text>
+              <View style={styles.legalButtonsRow}>
+                <Pressable
+                  onPress={() => openUrl('https://kws2026.vercel.app/terms')}
+                  style={[styles.legalButton, { borderColor: theme.colors.cardBorder }]}
+                >
+                  <FileText size={13} color={theme.colors.primary} />
+                  <Text style={[styles.legalButtonText, { color: theme.colors.primary }]}>Terms of Use (EULA)</Text>
+                  <ExternalLink size={11} color={theme.colors.textMuted} />
                 </Pressable>
-                <Text style={{ color: theme.colors.textLight }}>•</Text>
-                <Pressable onPress={() => openUrl('https://kws2026.vercel.app/privacy')}>
-                  <Text style={[styles.legalLink, { color: theme.colors.primary }]}>Privacy Policy</Text>
+
+                <Pressable
+                  onPress={() => openUrl('https://kws2026.vercel.app/privacy')}
+                  style={[styles.legalButton, { borderColor: theme.colors.cardBorder }]}
+                >
+                  <Lock size={13} color={theme.colors.primary} />
+                  <Text style={[styles.legalButtonText, { color: theme.colors.primary }]}>Privacy Policy</Text>
+                  <ExternalLink size={11} color={theme.colors.textMuted} />
                 </Pressable>
               </View>
+
+              <Text style={[styles.legalText, { color: theme.colors.textLight }]}>
+                Subscription automatically renews annually for $6.99 unless cancelled at least 24 hours before the end of the current billing cycle. Payment will be charged to your {Platform.OS === 'ios' ? 'Apple ID' : 'Google Play'} account at confirmation of purchase. You can manage or cancel your subscription at any time in your {Platform.OS === 'ios' ? 'Apple ID' : 'Google Play'} account settings.
+              </Text>
             </View>
           </ScrollView>
         </View>
@@ -346,7 +321,7 @@ const styles = StyleSheet.create({
   container: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    maxHeight: '92%',
     paddingTop: 16,
     paddingHorizontal: 20,
     paddingBottom: 24,
@@ -361,11 +336,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 28,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   proBadge: {
     flexDirection: 'row',
@@ -382,16 +357,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   title: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 13.5,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 19,
-    paddingHorizontal: 12,
+    lineHeight: 18,
+    paddingHorizontal: 10,
   },
   statusBox: {
     padding: 10,
@@ -407,61 +382,51 @@ const styles = StyleSheet.create({
   featuresBox: {
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    paddingVertical: 14,
-    marginVertical: 12,
-    gap: 12,
+    paddingVertical: 12,
+    marginVertical: 10,
+    gap: 11,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   featureIconWrap: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 11,
     marginTop: 2,
   },
   featureTextWrap: {
     flex: 1,
   },
   featureTitle: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
     marginBottom: 2,
   },
   featureDesc: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  plansContainer: {
-    gap: 10,
-    marginVertical: 14,
+    fontSize: 11.5,
+    lineHeight: 15,
   },
   planCard: {
     borderWidth: 2,
     borderRadius: 14,
     padding: 14,
+    marginVertical: 12,
   },
   planHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  radioOuter: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#9CA3AF',
+  planIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
   },
   planTitleRow: {
     flexDirection: 'row',
@@ -470,7 +435,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   planTitle: {
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: '700',
   },
   savingsBadge: {
@@ -480,7 +445,7 @@ const styles = StyleSheet.create({
   },
   savingsBadgeText: {
     color: '#FFFFFF',
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
@@ -488,9 +453,22 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     marginTop: 2,
   },
+  planScopeSub: {
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  priceCol: {
+    alignItems: 'flex-end',
+    marginLeft: 6,
+  },
   planPrice: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
+  },
+  priceTerm: {
+    fontSize: 10,
+    fontWeight: '500',
   },
   subscribeBtn: {
     flexDirection: 'row',
@@ -499,7 +477,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     borderRadius: 12,
-    marginTop: 8,
+    marginTop: 4,
   },
   subscribeBtnText: {
     color: '#FFFFFF',
@@ -516,24 +494,42 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
-  legalSection: {
+  legalLinksCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
     marginTop: 4,
-    alignItems: 'center',
   },
-  legalText: {
-    fontSize: 10.5,
-    lineHeight: 14,
-    textAlign: 'center',
+  legalCardHeader: {
+    fontSize: 11.5,
+    fontWeight: '700',
     marginBottom: 8,
+    textAlign: 'center',
   },
-  legalLinksRow: {
+  legalButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  legalButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    backgroundColor: '#FFFFFF',
   },
-  legalLink: {
+  legalButtonText: {
     fontSize: 11,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: '700',
+  },
+  legalText: {
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: 'center',
   },
 });
