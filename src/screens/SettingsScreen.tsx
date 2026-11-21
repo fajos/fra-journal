@@ -285,7 +285,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     if (updated) setCloudUser(updated);
     const freshDetails = await getSubscriptionStatusDetails(updated || cloudUser);
     setSubDetails(freshDetails);
-    showStatus('Reflective E-Journal Pro activated! Thank you.');
+    showStatus('FRA Journal Pro activated! Thank you.');
   };
 
   const handleSyncCloud = async () => {
@@ -912,7 +912,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Sparkles size={18} color="#15803D" />
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={[styles.proStatusTitle, { color: '#15803D' }]}>
-                    Reflective E-Journal Pro Active
+                    FRA Journal Pro Active
                   </Text>
                   <Text style={[styles.proStatusSub, { color: '#166534' }]}>
                     Billed via {subDetails?.platformName || (cloudUser?.subscription?.platform === 'apple_iap' ? 'Apple App Store' : cloudUser?.subscription?.platform === 'google_play' ? 'Google Play' : 'App Store')}
@@ -947,7 +947,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           ) : (
             <View>
               <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-                You are currently on the Free Starter plan. Upgrade to Pro to unlock unlimited AI goal decomposition, real-time multi-device cloud sync, printable annual keepsakes, and automated email reminders.
+                You are currently on the Free Starter plan. Upgrade to FRA Journal Pro to unlock unlimited AI goal decomposition, real-time multi-device cloud sync, printable annual keepsakes, and automated email reminders.
               </Text>
 
               <View style={styles.buttonRow}>
@@ -959,7 +959,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1.5 }]}
                 >
                   <Sparkles size={15} color="#FFFFFF" />
-                  <Text style={styles.buttonPrimaryText}>Upgrade to Pro ($6.99/yr)</Text>
+                  <Text style={styles.buttonPrimaryText}>Upgrade to FRA Journal Pro ($6.99/yr)</Text>
                 </Pressable>
 
                 <Pressable

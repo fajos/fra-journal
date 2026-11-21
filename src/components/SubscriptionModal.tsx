@@ -146,11 +146,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
                 ]}
               >
-                Reflective E-Journal Pro
+                FRA Journal Pro
               </Text>
               <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
                 {featureReason ||
-                  'Deepen your focus, unlock intelligent annual planning, and keep your life reflections backed up and accessible across Web, iOS, and Android.'}
+                  'Deepen your focus, unlock intelligent annual planning, and keep your life reflections backed up and accessible across Web, iOS, and Android by Finish Rich Africa.'}
               </Text>
             </View>
 

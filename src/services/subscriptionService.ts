@@ -117,7 +117,7 @@ export async function purchaseSubscriptionPackage(
     return {
       success: true,
       isPro: hasPro,
-      message: hasPro ? 'Welcome to Reflective E-Journal Pro!' : 'Purchase completed successfully.',
+      message: hasPro ? 'Welcome to FRA Journal Pro!' : 'Purchase completed successfully.',
     };
   } catch (error: any) {
     if (error.userCancelled) {

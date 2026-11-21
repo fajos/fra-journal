@@ -23,7 +23,7 @@ export async function exportJournalToPDF(state: JournalState): Promise<string | 
       await Sharing.shareAsync(uri, {
         UTI: '.pdf',
         mimeType: 'application/pdf',
-        dialogTitle: `Reflective E-Journal ${state.year} Booklet`,
+        dialogTitle: `FRA Journal ${state.year} Booklet`,
       });
     }
 
@@ -66,7 +66,7 @@ function generateJournalHTML(state: JournalState): string {
     <html>
       <head>
         <meta charset="utf-8" />
-        <title>Reflective E-Journal ${state.year}</title>
+        <title>FRA Journal ${state.year} • Finish Rich Africa</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
           @page {
@@ -208,7 +208,7 @@ function generateJournalHTML(state: JournalState): string {
         </div>
 
         <div class="footer">
-          Generated with Reflective E-Journal • ${new Date().toLocaleDateString()}
+          Generated with FRA Journal • Finish Rich Africa • ${new Date().toLocaleDateString()}
         </div>
       </body>
     </html>

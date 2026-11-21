@@ -91,7 +91,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif },
               ]}
             >
-              Reflective E-Journal
+              FRA Journal
             </Text>
             <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
               Sign in or create an account to unlock your private annual journal. All entries are backed up and synced to your cloud storage.

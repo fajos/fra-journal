@@ -22,7 +22,7 @@
       "bundleIdentifier": "com.fajostech.ejournal",
       "supportsTablet": true,
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Allow Reflective E-Journal to use Face ID to authenticate and protect your private journal entries.",
+        "NSFaceIDUsageDescription": "Allow FRA Journal to use Face ID to authenticate and protect your private journal entries.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -51,7 +51,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow Reflective E-Journal to use Face ID to authenticate and protect your private journal entries."
+          "faceIDPermission": "Allow FRA Journal to use Face ID to authenticate and protect your private journal entries."
         }
       ]
     ],
