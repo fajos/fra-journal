@@ -7,6 +7,7 @@ import {
   Switch,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { Text, TextInput } from '../components/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -58,6 +59,7 @@ import {
   X,
   Trash2,
   CloudDownload,
+  ExternalLink,
 } from 'lucide-react-native';
 import {
   checkForAppUpdates,
@@ -1072,6 +1074,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <Trash2 size={15} color="#DC2626" />
               <Text style={styles.deleteAccountBtnText}>Delete Account &amp; Wipe Cloud Data</Text>
             </Pressable>
+
+            <Pressable
+              onPress={() => Linking.openURL('https://kws2026.vercel.app/delete-account')}
+              style={styles.webDeleteLinkBtn}
+            >
+              <ExternalLink size={12} color={theme.colors.textMuted} />
+              <Text style={[styles.webDeleteLinkText, { color: theme.colors.textMuted }]}>
+                Request deletion via web portal (delete-account)
+              </Text>
+            </Pressable>
           </View>
         </View>
 
@@ -1286,6 +1298,53 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <RotateCcw size={14} color="#FFFFFF" />
             <Text style={styles.dangerButtonText}>Reset to Default Starters</Text>
           </Pressable>
+        </View>
+
+        {/* Legal & Data Privacy */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <ShieldCheck size={18} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+              Legal &amp; Data Privacy
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
+            Review our privacy commitments, store licensing terms, or request account and data deletion.
+          </Text>
+
+          <View style={styles.legalLinksContainer}>
+            <Pressable
+              onPress={() => Linking.openURL('https://kws2026.vercel.app/privacy')}
+              style={[styles.legalLinkRow, { borderColor: theme.colors.cardBorder, backgroundColor: theme.colors.primaryLight }]}
+            >
+              <Text style={[styles.legalLinkLabel, { color: theme.colors.textDark }]}>Privacy Policy</Text>
+              <ExternalLink size={14} color={theme.colors.primary} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => Linking.openURL('https://kws2026.vercel.app/terms')}
+              style={[styles.legalLinkRow, { borderColor: theme.colors.cardBorder, backgroundColor: theme.colors.primaryLight }]}
+            >
+              <Text style={[styles.legalLinkLabel, { color: theme.colors.textDark }]}>Terms of Use (EULA)</Text>
+              <ExternalLink size={14} color={theme.colors.primary} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => Linking.openURL('https://kws2026.vercel.app/delete-account')}
+              style={[styles.legalLinkRow, { borderColor: '#FCA5A5', backgroundColor: theme.isDark ? '#2E1518' : '#FEF2F2' }]}
+            >
+              <Text style={[styles.legalLinkLabel, { color: '#DC2626' }]}>Request Account &amp; Data Deletion</Text>
+              <ExternalLink size={14} color="#DC2626" />
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -1813,5 +1872,34 @@ const styles = StyleSheet.create({
   expiryText: {
     fontSize: 12,
     lineHeight: 16,
+  },
+  webDeleteLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 6,
+    paddingVertical: 4,
+  },
+  webDeleteLinkText: {
+    fontSize: 11.5,
+    textDecorationLine: 'underline',
+  },
+  legalLinksContainer: {
+    gap: 8,
+    marginTop: 6,
+  },
+  legalLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  legalLinkLabel: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
