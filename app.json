@@ -20,6 +20,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.fajostech.ejournal",
+      "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
         "NSFaceIDUsageDescription": "Allow FRA Journal to use Face ID to authenticate and protect your private journal entries.",
@@ -28,6 +29,7 @@
     },
     "android": {
       "package": "com.fajostech.ejournal",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#FAF7F2",
         "foregroundImage": "./assets/android-icon-foreground.png",
