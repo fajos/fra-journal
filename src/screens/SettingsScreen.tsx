@@ -848,17 +848,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <View style={styles.cardHeader}>
             <Bell size={18} color={theme.colors.primary} />
             <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
-              Cadence Reminders & Habits
+              Device Push Notifications (Free)
             </Text>
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Stay accountable with timed prompts on your phone or web browser.
+            Local on-device alerts scheduled directly on your phone to keep your cadence sharp. No server or email account needed.
           </Text>
 
           <View style={styles.switchRow}>
             <View style={styles.switchMeta}>
               <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>Sunday Weekly Planning (7:00 PM)</Text>
-              <Text style={[styles.switchSub, { color: theme.colors.textMuted }]}>Nudge to review prior week and set Top 3 priorities</Text>
+              <Text style={[styles.switchSub, { color: theme.colors.textMuted }]}>Local phone alert to review prior week &amp; set Top 3 priorities</Text>
             </View>
             <Switch
               value={sundayCadence}
@@ -871,7 +871,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: theme.colors.linedPaper }]}>
             <View style={styles.switchMeta}>
               <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>Month-End Review Nudge</Text>
-              <Text style={[styles.switchSub, { color: theme.colors.textMuted }]}>Prompts you to reflect on achievements and carry forwards</Text>
+              <Text style={[styles.switchSub, { color: theme.colors.textMuted }]}>Local phone alert on the 28th to reflect on achievements &amp; carry forwards</Text>
             </View>
             <Switch
               value={monthEndCadence}
@@ -1150,8 +1150,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             )}
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Receive periodic email check-ins with your Top 3 yearly goals, weekly habit focus, and personal reflection link.
+            Receive periodic email check-ins delivered to your inbox with your Top 3 yearly goals, weekly habit focus, and personal reflection link.
           </Text>
+
+          {!userIsPro && (
+            <View style={[styles.proNoticeBanner, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
+              <Sparkles size={15} color="#D97706" />
+              <Text style={[styles.proNoticeText, { color: '#92400E' }]}>
+                Automated email delivery requires FRA Journal Pro. On-device push notifications above remain 100% free.
+              </Text>
+            </View>
+          )}
 
           {/* Frequency Chips */}
           <Text style={[styles.switchSub, { color: theme.colors.textMuted, marginBottom: 6 }]}>
@@ -1168,12 +1177,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               return (
                 <Pressable
                   key={f.id}
-                  onPress={() => setReminderFreq(f.id as any)}
+                  onPress={() => {
+                    if (!userIsPro) {
+                      hapticFeedback.warning();
+                      setShowSubscriptionModal(true);
+                      return;
+                    }
+                    setReminderFreq(f.id as any);
+                  }}
                   style={[
                     styles.chipBtn,
                     {
                       backgroundColor: isAct ? theme.colors.primary : theme.colors.primaryLight,
                       borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
+                      opacity: !userIsPro ? 0.75 : 1,
                     },
                   ]}
                 >
@@ -1185,33 +1202,46 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             })}
           </View>
 
-          <View style={styles.buttonRow}>
+          {!userIsPro ? (
             <Pressable
-              onPress={handleSaveReminderSettings}
-              disabled={reminderLoading}
-              style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, flex: 1 }]}
+              onPress={() => {
+                hapticFeedback.selection();
+                setShowSubscriptionModal(true);
+              }}
+              style={[styles.buttonPrimary, { backgroundColor: '#D97706', width: '100%' }]}
             >
-              <Check size={14} color={theme.colors.textDark} />
-              <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>
-                Save Preferences
-              </Text>
+              <Sparkles size={15} color="#FFFFFF" />
+              <Text style={styles.buttonPrimaryText}>Unlock Email Reminders with Pro</Text>
             </Pressable>
-            <Pressable
-              onPress={handleSendTestReminder}
-              disabled={reminderLoading || !cloudUser}
-              style={[
-                styles.buttonPrimary,
-                { backgroundColor: '#D97706', flex: 1, opacity: !cloudUser ? 0.6 : 1 },
-              ]}
-            >
-              {reminderLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Mail size={14} color="#FFFFFF" />
-              )}
-              <Text style={styles.buttonPrimaryText}>Send Test Email</Text>
-            </Pressable>
-          </View>
+          ) : (
+            <View style={styles.buttonRow}>
+              <Pressable
+                onPress={handleSaveReminderSettings}
+                disabled={reminderLoading}
+                style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, flex: 1 }]}
+              >
+                <Check size={14} color={theme.colors.textDark} />
+                <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>
+                  Save Preferences
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSendTestReminder}
+                disabled={reminderLoading || !cloudUser}
+                style={[
+                  styles.buttonPrimary,
+                  { backgroundColor: '#D97706', flex: 1, opacity: !cloudUser ? 0.6 : 1 },
+                ]}
+              >
+                {reminderLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Mail size={14} color="#FFFFFF" />
+                )}
+                <Text style={styles.buttonPrimaryText}>Send Test Email</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* Backup & Restore */}
@@ -1985,6 +2015,21 @@ const styles = StyleSheet.create({
   legalLinkLabel: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  proNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+    gap: 8,
+  },
+  proNoticeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
+    flex: 1,
   },
   proHeaderBadge: {
     backgroundColor: '#D97706',
