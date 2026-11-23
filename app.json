@@ -53,7 +53,8 @@
         {
           "faceIDPermission": "Allow FRA Journal to use Face ID to authenticate and protect your private journal entries."
         }
-      ]
+      ],
+      "./plugins/withHardwareFeatures"
     ],
     "extra": {
       "eas": {
