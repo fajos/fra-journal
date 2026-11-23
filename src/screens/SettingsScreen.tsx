@@ -118,7 +118,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [syncLoading, setSyncLoading] = useState(false);
 
   // Email Reminders states
-  const [reminderFreq, setReminderFreq] = useState<'weekly' | 'daily' | 'monthly' | 'disabled'>('weekly');
+  const [reminderFreq, setReminderFreq] = useState<'weekly' | 'daily' | 'monthly' | 'disabled'>('disabled');
   const [reminderDay, setReminderDay] = useState('Monday');
   const [reminderLoading, setReminderLoading] = useState(false);
 

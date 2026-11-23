@@ -47,6 +47,7 @@
       "bundler": "metro"
     },
     "plugins": [
+      "expo-updates",
       "expo-sharing",
       [
         "expo-local-authentication",

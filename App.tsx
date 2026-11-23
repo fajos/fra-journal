@@ -35,6 +35,7 @@ import {
   CloudUser,
 } from './src/services/cloudSyncService';
 import { initSubscriptions, checkIsUserPro } from './src/services/subscriptionService';
+import { checkForAppUpdates } from './src/services/updatesService';
 import { ShieldCheck, Lock } from 'lucide-react-native';
 
 // Screens
@@ -115,6 +116,11 @@ function AppContent() {
 
       const loaded = await loadJournalState();
       setState(loaded);
+
+      // Check for over-the-air updates silently in standalone/production builds
+      if (Platform.OS !== 'web') {
+        checkForAppUpdates().catch(() => {});
+      }
 
       if (user && pro) {
         // Automatically sync or restore user data from cloud for Pro members
