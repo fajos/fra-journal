@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { TextInput } from './AppText';
-import { Check } from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { hapticFeedback } from '../services/hapticsService';
 
@@ -59,6 +59,18 @@ export const CheckboxItem: React.FC<CheckboxItemProps> = ({
         ]}
         multiline={true}
       />
+      {onDelete && (
+        <Pressable
+          onPress={() => {
+            hapticFeedback.light();
+            onDelete();
+          }}
+          style={styles.deleteBtn}
+          hitSlop={8}
+        >
+          <X size={14} color={theme.colors.textLight} />
+        </Pressable>
+      )}
     </View>
   );
 };
@@ -89,5 +101,10 @@ const styles = StyleSheet.create({
   },
   inputCompleted: {
     textDecorationLine: 'line-through',
+  },
+  deleteBtn: {
+    padding: 3,
+    marginTop: 2,
+    opacity: 0.7,
   },
 });

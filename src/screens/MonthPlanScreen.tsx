@@ -14,7 +14,8 @@ import { CheckboxItem } from '../components/CheckboxItem';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
 import { MONTH_NAMES, updateGoalMonth, getWeeksForMonth, getActiveGoalAreas } from '../storage/journalStorage';
-import { CheckSquare, ListTodo, FileText, ArrowRight, Clock, RotateCcw } from 'lucide-react-native';
+import { CheckSquare, ListTodo, FileText, ArrowRight, Clock, RotateCcw, Plus } from 'lucide-react-native';
+import { hapticFeedback } from '../services/hapticsService';
 
 interface MonthPlanScreenProps {
   state: JournalState;
@@ -56,6 +57,24 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
     onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { keyGoals: goals }));
   };
 
+  const handleAddKeyGoal = () => {
+    hapticFeedback.selection();
+    const goals = [...(currentPlan.keyGoals || [])];
+    goals.push({
+      id: `kg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      text: '',
+      completed: false,
+    });
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { keyGoals: goals }));
+  };
+
+  const handleDeleteKeyGoal = (index: number) => {
+    hapticFeedback.light();
+    const goals = [...(currentPlan.keyGoals || [])];
+    goals.splice(index, 1);
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { keyGoals: goals }));
+  };
+
   const handleToggleTodo = (index: number) => {
     const todos = [...currentPlan.todos];
     todos[index] = { ...todos[index], completed: !todos[index].completed };
@@ -65,6 +84,24 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
   const handleChangeTodoText = (index: number, text: string) => {
     const todos = [...currentPlan.todos];
     todos[index] = { ...todos[index], text };
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { todos }));
+  };
+
+  const handleAddTodo = () => {
+    hapticFeedback.selection();
+    const todos = [...(currentPlan.todos || [])];
+    todos.push({
+      id: `todo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      text: '',
+      completed: false,
+    });
+    onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { todos }));
+  };
+
+  const handleDeleteTodo = (index: number) => {
+    hapticFeedback.light();
+    const todos = [...(currentPlan.todos || [])];
+    todos.splice(index, 1);
     onUpdateState(updateGoalMonth(state, selectedArea, selectedMonth, { todos }));
   };
 
@@ -215,9 +252,25 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
                 placeholder={`Goal #${idx + 1} for ${MONTH_NAMES[selectedMonth - 1]}...`}
                 onToggle={() => handleToggleKeyGoal(idx)}
                 onChangeText={(t) => handleChangeKeyGoalText(idx, t)}
+                onDelete={() => handleDeleteKeyGoal(idx)}
               />
             ))}
+            {currentPlan.keyGoals.length === 0 && (
+              <Text style={[styles.emptyHint, { color: theme.colors.textMuted }]}>
+                No monthly goals added yet. Tap Add Key Goal below.
+              </Text>
+            )}
           </View>
+          <Pressable
+            onPress={handleAddKeyGoal}
+            style={[styles.addItemBtn, { borderColor: theme.colors.cardBorder }]}
+            hitSlop={6}
+          >
+            <Plus size={13} color={theme.colors.primary} />
+            <Text style={[styles.addItemBtnText, { color: theme.colors.primary }]}>
+              Add Key Goal
+            </Text>
+          </Pressable>
         </View>
 
         {/* Section 2: To do */}
@@ -245,9 +298,25 @@ export const MonthPlanScreen: React.FC<MonthPlanScreenProps> = ({
                 placeholder={`To-do task #${idx + 1}...`}
                 onToggle={() => handleToggleTodo(idx)}
                 onChangeText={(t) => handleChangeTodoText(idx, t)}
+                onDelete={() => handleDeleteTodo(idx)}
               />
             ))}
+            {currentPlan.todos.length === 0 && (
+              <Text style={[styles.emptyHint, { color: theme.colors.textMuted }]}>
+                No to-do tasks added yet. Tap Add To-Do below.
+              </Text>
+            )}
           </View>
+          <Pressable
+            onPress={handleAddTodo}
+            style={[styles.addItemBtn, { borderColor: theme.colors.cardBorder }]}
+            hitSlop={6}
+          >
+            <Plus size={13} color={theme.colors.secondary} />
+            <Text style={[styles.addItemBtnText, { color: theme.colors.secondary }]}>
+              Add To-Do Task
+            </Text>
+          </Pressable>
         </View>
 
         {/* Section 3: Notes */}
@@ -400,5 +469,25 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     minHeight: 90,
     textAlignVertical: 'top',
+  },
+  addItemBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    marginTop: 8,
+  },
+  addItemBtnText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  emptyHint: {
+    fontSize: 12.5,
+    fontStyle: 'italic',
+    paddingVertical: 6,
   },
 });

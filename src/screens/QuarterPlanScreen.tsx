@@ -14,7 +14,8 @@ import { CheckboxItem } from '../components/CheckboxItem';
 import { GoalScopeHeader } from '../components/GoalScopeHeader';
 import { JOURNAL_QUOTES } from '../constants/quotes';
 import { MONTH_NAMES, updateGoalQuarter, getActiveGoalAreas } from '../storage/journalStorage';
-import { Compass, Calendar, ArrowRight } from 'lucide-react-native';
+import { Compass, Calendar, ArrowRight, Plus } from 'lucide-react-native';
+import { hapticFeedback } from '../services/hapticsService';
 
 interface QuarterPlanScreenProps {
   state: JournalState;
@@ -66,6 +67,24 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
   ) => {
     const items = [...currentPlan[monthKey]];
     items[index] = { ...items[index], text };
+    onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { [monthKey]: items }));
+  };
+
+  const handleAddItem = (monthKey: 'month1' | 'month2' | 'month3') => {
+    hapticFeedback.selection();
+    const items = [...(currentPlan[monthKey] || [])];
+    items.push({
+      id: `qitem_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      text: '',
+      completed: false,
+    });
+    onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { [monthKey]: items }));
+  };
+
+  const handleDeleteItem = (monthKey: 'month1' | 'month2' | 'month3', index: number) => {
+    hapticFeedback.light();
+    const items = [...(currentPlan[monthKey] || [])];
+    items.splice(index, 1);
     onUpdateState(updateGoalQuarter(state, selectedArea, selectedQuarter, { [monthKey]: items }));
   };
 
@@ -182,12 +201,29 @@ export const QuarterPlanScreen: React.FC<QuarterPlanScreenProps> = ({
                     key={item.id || idx}
                     text={item.text}
                     completed={item.completed}
-                    placeholder={`Key target for ${label} (target ${idx + 1})...`}
+                    placeholder={`Key target #${idx + 1} for ${label}...`}
                     onToggle={() => handleToggleItem(key, idx)}
                     onChangeText={(t) => handleChangeItemText(key, idx, t)}
+                    onDelete={() => handleDeleteItem(key, idx)}
                   />
                 ))}
+                {items.length === 0 && (
+                  <Text style={[styles.emptyHint, { color: theme.colors.textMuted }]}>
+                    No targets set for {label}. Tap Add Target below.
+                  </Text>
+                )}
               </View>
+
+              <Pressable
+                onPress={() => handleAddItem(key)}
+                style={[styles.addItemBtn, { borderColor: theme.colors.cardBorder }]}
+                hitSlop={6}
+              >
+                <Plus size={13} color={theme.colors.primary} />
+                <Text style={[styles.addItemBtnText, { color: theme.colors.primary }]}>
+                  Add Target for {label}
+                </Text>
+              </Pressable>
             </View>
           );
         })}
@@ -282,5 +318,25 @@ const styles = StyleSheet.create({
   },
   checkboxList: {
     gap: 2,
+  },
+  addItemBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    marginTop: 8,
+  },
+  addItemBtnText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  emptyHint: {
+    fontSize: 12.5,
+    fontStyle: 'italic',
+    paddingVertical: 6,
   },
 });
