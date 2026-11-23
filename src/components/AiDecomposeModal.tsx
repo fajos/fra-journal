@@ -23,6 +23,8 @@ interface AiDecomposeModalProps {
   area: LifeArea;
   initialGoalText: string;
   year: number;
+  isPro?: boolean;
+  onUpgrade?: () => void;
   onApply: (plan: DecomposedPlan) => void;
 }
 
@@ -32,6 +34,8 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
   area,
   initialGoalText,
   year,
+  isPro = false,
+  onUpgrade,
   onApply,
 }) => {
   const { theme } = useTheme();
@@ -148,24 +152,58 @@ export const AiDecomposeModal: React.FC<AiDecomposeModalProps> = ({
               </View>
             </View>
 
-            {/* Trigger Button */}
-            <Pressable
-              onPress={handleRun}
-              disabled={loading || !goalText.trim()}
-              style={[
-                styles.runBtn,
-                { backgroundColor: theme.colors.primary, opacity: loading || !goalText.trim() ? 0.6 : 1 },
-              ]}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Sparkles size={15} color="#FFFFFF" />
-              )}
-              <Text style={styles.runBtnText}>
-                {loading ? 'Decomposing Goal...' : 'Auto-Decompose into Quarters, Months & Weeks'}
-              </Text>
-            </Pressable>
+            {/* Trigger Button or Pro Upgrade Lock */}
+            {!isPro ? (
+              <View
+                style={[
+                  styles.proLockContainer,
+                  {
+                    backgroundColor: theme.isDark ? '#2E1518' : '#FEF3C7',
+                    borderColor: '#F59E0B',
+                  },
+                ]}
+              >
+                <View style={styles.proLockHeader}>
+                  <Sparkles size={16} color="#D97706" />
+                  <Text style={[styles.proLockTitle, { color: '#B45309' }]}>
+                    FRA Journal Pro Feature
+                  </Text>
+                </View>
+                <Text style={[styles.proLockDesc, { color: theme.isDark ? '#FDE68A' : '#78350F' }]}>
+                  Intelligent cascading AI decomposition automatically plans your quarterly milestones, monthly targets, and weekly action items for {year}.
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    onUpgrade?.();
+                  }}
+                  style={[styles.proUpgradeBtn, { backgroundColor: '#D97706' }]}
+                >
+                  <Sparkles size={15} color="#FFFFFF" />
+                  <Text style={styles.proUpgradeBtnText}>
+                    Unlock with FRA Journal Pro ($6.99/yr)
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                onPress={handleRun}
+                disabled={loading || !goalText.trim()}
+                style={[
+                  styles.runBtn,
+                  { backgroundColor: theme.colors.primary, opacity: loading || !goalText.trim() ? 0.6 : 1 },
+                ]}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Sparkles size={15} color="#FFFFFF" />
+                )}
+                <Text style={styles.runBtnText}>
+                  {loading ? 'Decomposing Goal...' : 'Auto-Decompose into Quarters, Months & Weeks'}
+                </Text>
+              </Pressable>
+            )}
 
             {/* Plan Preview */}
             {plan && (
@@ -390,6 +428,40 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   applyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  proLockContainer: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 6,
+  },
+  proLockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  proLockTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  proLockDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  proUpgradeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  proUpgradeBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',

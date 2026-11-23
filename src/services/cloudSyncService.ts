@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalState } from '../types/journal';
-import { identifyUser, resetUser } from './subscriptionService';
+import { identifyUser, resetUser, checkIsUserPro } from './subscriptionService';
 
 const TOKEN_KEY = '@ejournal_cloud_token';
 const USER_KEY = '@ejournal_cloud_user';
@@ -194,11 +194,21 @@ export async function fetchCloudState(year: number): Promise<{
  * Synchronize local state with cloud state in Turso.
  * If cloud has data, merges or pulls latest; also pushes local changes to cloud.
  */
-export async function syncWithCloud(localState: JournalState): Promise<{ success: boolean; state?: JournalState; message?: string }> {
+export async function syncWithCloud(localState: JournalState): Promise<{ success: boolean; state?: JournalState; message?: string; isProRequired?: boolean }> {
   try {
     const token = await getCloudToken();
     if (!token) {
       return { success: false, message: 'Not logged in. Running in offline guest mode.' };
+    }
+
+    // Pro Gating: Only Pro subscribers can sync data to the cloud
+    const isPro = await checkIsUserPro();
+    if (!isPro) {
+      return {
+        success: false,
+        isProRequired: true,
+        message: 'Multi-Device Cloud Sync is an exclusive FRA Journal Pro feature. Please upgrade to Pro to backup and sync your journal.',
+      };
     }
 
     const baseUrl = await getServerUrl();
@@ -221,6 +231,13 @@ export async function syncWithCloud(localState: JournalState): Promise<{ success
       if (saveRes.status === 401) {
         await cloudLogout();
         return { success: false, message: 'Session expired. Please log in again.' };
+      }
+      if (saveRes.status === 403) {
+        return {
+          success: false,
+          isProRequired: true,
+          message: 'Multi-Device Cloud Sync requires an active FRA Journal Pro subscription.',
+        };
       }
       return { success: false, message: 'Cloud sync failed.' };
     }

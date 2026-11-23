@@ -40,6 +40,7 @@ import {
   AlertTriangle,
 } from 'lucide-react-native';
 import { AiDecomposeModal } from '../components/AiDecomposeModal';
+import { SubscriptionModal } from '../components/SubscriptionModal';
 import { applyDecompositionToGoal, DecomposedPlan } from '../services/aiDecomposeService';
 import { checkIsUserPro } from '../services/subscriptionService';
 
@@ -67,12 +68,19 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<'cards' | 'radar'>('cards');
   const [localIsPro, setLocalIsPro] = useState(isPro ?? false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+
+  useEffect(() => {
+    setLocalIsPro(Boolean(isPro));
+  }, [isPro]);
 
   useEffect(() => {
     checkIsUserPro().then((pro) => {
-      if (pro) setLocalIsPro(true);
+      setLocalIsPro(pro);
     });
   }, []);
+
+  const userIsPro = Boolean(isPro || localIsPro);
 
   const [showYearPickerModal, setShowYearPickerModal] = useState(false);
   const [customYearInput, setCustomYearInput] = useState('');
@@ -376,6 +384,11 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                 {/* AI Decomposition Action Pill */}
                 <Pressable
                   onPress={() => {
+                    if (!userIsPro) {
+                      hapticFeedback.warning();
+                      setShowSubscriptionModal(true);
+                      return;
+                    }
                     setAiTargetArea(item.key);
                     setShowAiModal(true);
                   }}
@@ -392,6 +405,11 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
                   <Text style={[styles.aiDecomposeBtnText, { color: theme.colors.textDark }]}>
                     ✨ Auto-Decompose with AI
                   </Text>
+                  {!userIsPro && (
+                    <View style={styles.proLockBadge}>
+                      <Text style={styles.proLockBadgeText}>★ PRO</Text>
+                    </View>
+                  )}
                 </Pressable>
 
                 {/* Navigation Action Pills for this Goal */}
@@ -827,7 +845,22 @@ export const YearGoalsScreen: React.FC<YearGoalsScreenProps> = ({
         area={aiTargetArea}
         initialGoalText={state.goals[aiTargetArea]?.text || ''}
         year={state.year}
+        isPro={userIsPro}
+        onUpgrade={() => {
+          setShowAiModal(false);
+          setShowSubscriptionModal(true);
+        }}
         onApply={handleApplyDecomposition}
+      />
+
+      {/* Subscription Modal for Pro Upgrade */}
+      <SubscriptionModal
+        visible={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        onSuccess={() => {
+          setLocalIsPro(true);
+          setShowSubscriptionModal(false);
+        }}
       />
     </ScrollView>
   );
@@ -854,6 +887,19 @@ const styles = StyleSheet.create({
   aiDecomposeBtnText: {
     fontSize: 11.5,
     fontWeight: '700',
+  },
+  proLockBadge: {
+    backgroundColor: '#D97706',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  proLockBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   modalOverlay: {
     flex: 1,

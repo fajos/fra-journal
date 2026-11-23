@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Purchases, {
   PurchasesPackage,
   PurchasesOfferings,
@@ -176,6 +177,19 @@ export async function checkIsUserPro(cloudUser?: CloudUser | null): Promise<bool
   // 1. If cloud user already has verified Pro status from central database:
   if (cloudUser?.is_pro) {
     return true;
+  }
+
+  // If cloudUser was not provided, check stored cloud user in local storage
+  if (!cloudUser) {
+    try {
+      const stored = await AsyncStorage.getItem('@ejournal_cloud_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u?.is_pro) return true;
+      }
+    } catch {
+      // Ignored
+    }
   }
 
   // 2. Check local RevenueCat entitlement (if native)

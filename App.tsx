@@ -116,8 +116,8 @@ function AppContent() {
       const loaded = await loadJournalState();
       setState(loaded);
 
-      if (user) {
-        // Automatically sync or restore user data from cloud
+      if (user && pro) {
+        // Automatically sync or restore user data from cloud for Pro members
         fetchCloudState(loaded.year).then(async (res) => {
           if (res.success && res.state) {
             setState(res.state);
@@ -149,7 +149,9 @@ function AppContent() {
     }
     saveTimeoutRef.current = setTimeout(() => {
       saveJournalState(newState);
-      syncWithCloud(newState).catch(() => {});
+      if (isPro && cloudUser) {
+        syncWithCloud(newState).catch(() => {});
+      }
     }, 500);
   };
 

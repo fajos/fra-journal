@@ -135,6 +135,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     getSubscriptionStatusDetails(cloudUser).then(setSubDetails);
   }, [cloudUser]);
 
+  const userIsPro = Boolean(subDetails?.isPro || cloudUser?.is_pro);
+
   const rollingYears = getRollingYears();
   const allStoredYears = Object.keys(state.yearsData || {}).map((y) => parseInt(y, 10));
   const archivedYears = allStoredYears
@@ -194,6 +196,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   const handleToggleBiometrics = async (enabled: boolean) => {
     hapticFeedback.selection();
+    if (enabled && !userIsPro) {
+      hapticFeedback.warning();
+      setShowSubscriptionModal(true);
+      return;
+    }
     if (enabled) {
       const authed = await authenticateWithBiometrics('Enable biometric and screen lock for your journal');
       if (authed) {
@@ -243,6 +250,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleExportPDF = async () => {
+    if (!userIsPro) {
+      hapticFeedback.warning();
+      setShowSubscriptionModal(true);
+      return;
+    }
     hapticFeedback.medium();
     showStatus('Preparing your printable Annual Journal Booklet...');
     const result = await exportJournalToPDF(state);
@@ -291,6 +303,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleSyncCloud = async () => {
+    if (!userIsPro) {
+      hapticFeedback.warning();
+      setShowSubscriptionModal(true);
+      return;
+    }
     hapticFeedback.medium();
     setSyncLoading(true);
     const res = await syncWithCloud(state);
@@ -300,6 +317,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       showStatus(res.message || 'Synced with cloud successfully!');
     } else {
       hapticFeedback.error();
+      if (res.isProRequired) {
+        setShowSubscriptionModal(true);
+      }
       showStatus(res.message || 'Cloud sync failed.');
     }
   };
@@ -382,6 +402,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleSaveReminderSettings = async () => {
+    if (!userIsPro) {
+      hapticFeedback.warning();
+      setShowSubscriptionModal(true);
+      return;
+    }
     hapticFeedback.selection();
     setReminderLoading(true);
     const res = await saveReminderSettings({
@@ -397,6 +422,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleSendTestReminder = async () => {
+    if (!userIsPro) {
+      hapticFeedback.warning();
+      setShowSubscriptionModal(true);
+      return;
+    }
     hapticFeedback.medium();
     setReminderLoading(true);
     const res = await sendTestReminder();
@@ -792,6 +822,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
               Biometric & Screen Lock
             </Text>
+            {!userIsPro && (
+              <View style={styles.proHeaderBadge}>
+                <Text style={styles.proHeaderBadgeText}>★ PRO</Text>
+              </View>
+            )}
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             Keep your deeply personal thoughts, finances, and reflections private with Face ID, Touch ID, Fingerprint, or device Passcode/PIN on app launch.
@@ -882,6 +917,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           >
             <Printer size={15} color="#FFFFFF" />
             <Text style={styles.buttonPrimaryText}>Generate {state.year} PDF Keepsake</Text>
+            {!userIsPro && (
+              <View style={styles.proHeaderBadge}>
+                <Text style={styles.proHeaderBadgeText}>★ PRO</Text>
+              </View>
+            )}
           </Pressable>
         </View>
 
@@ -1051,6 +1091,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <Text style={[styles.syncNowBtnText, { color: theme.colors.textDark }]}>
                 Sync Changes to Cloud Now
               </Text>
+              {!userIsPro && (
+                <View style={styles.proHeaderBadge}>
+                  <Text style={styles.proHeaderBadgeText}>★ PRO</Text>
+                </View>
+              )}
             </Pressable>
 
             <Pressable
@@ -1102,6 +1147,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
               Email Goal Reminders
             </Text>
+            {!userIsPro && (
+              <View style={styles.proHeaderBadge}>
+                <Text style={styles.proHeaderBadgeText}>★ PRO</Text>
+              </View>
+            )}
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             Receive periodic email check-ins with your Top 3 yearly goals, weekly habit focus, and personal reflection link.
@@ -1901,5 +1951,18 @@ const styles = StyleSheet.create({
   legalLinkLabel: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  proHeaderBadge: {
+    backgroundColor: '#D97706',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  proHeaderBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

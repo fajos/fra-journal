@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LifeArea, GoalEntry, CheckItem } from '../types/journal';
-import { getServerUrl } from './cloudSyncService';
+import { getServerUrl, getCloudToken } from './cloudSyncService';
+import { checkIsUserPro } from './subscriptionService';
 import { MONTH_NAMES, getWeeksForMonth } from '../storage/journalStorage';
 
 export interface DecomposedWeek {
@@ -187,14 +188,26 @@ export async function decomposeGoal(
   goalText: string,
   year: number = new Date().getFullYear()
 ): Promise<DecomposedPlan> {
+  // Pro Gating: Ensure only Pro users can run decomposition
+  const isPro = await checkIsUserPro();
+  if (!isPro) {
+    throw new Error('AI Goal Decomposition is an exclusive FRA Journal Pro feature. Please upgrade to Pro.');
+  }
+
   const cleanGoal = goalText.trim() || `Excel in ${area}`;
 
   // Try calling backend API where DEEPSEEK_API_KEY / OPENAI_API_KEY are configured in the environment
   try {
     const baseUrl = await getServerUrl();
+    const token = await getCloudToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${baseUrl}/api/journal/ai-decompose`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         area,
         goalText: cleanGoal,
@@ -209,7 +222,7 @@ export async function decomposeGoal(
       }
     }
   } catch {
-    // Fall back to local heuristics if server is offline or unreachable
+    // Fall back to local smart engine for verified Pro users if server is unreachable
   }
 
   return generateLocalSmartDecomposition(area, cleanGoal, year);
