@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Pressable,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { Text } from './src/components/AppText';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
