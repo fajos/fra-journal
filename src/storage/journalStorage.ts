@@ -347,33 +347,20 @@ export function createDefaultMonthPlans(
 export function createDefaultGoalsForYear(year: number): Record<LifeArea, GoalEntry> {
   const goals = {} as Record<LifeArea, GoalEntry>;
 
-  LIFE_AREAS.forEach((item, index) => {
-    const isSampleTop = index < 3;
+  LIFE_AREAS.forEach((item) => {
     goals[item.key] = {
       area: item.key,
-      text: isSampleTop
-        ? index === 0
-          ? 'Read 12 transformative books and write monthly summaries'
-          : index === 1
-          ? 'Establish a daily 30-minute workout and prioritize 7.5 hours of sleep'
-          : 'Dedicate 15 minutes each morning to quiet prayer and meditation'
-        : '',
-      priority: (isSampleTop ? index + 1 : 1) as 1 | 2 | 3,
-      isTopThree: isSampleTop,
-      whyItMatters: isSampleTop
-        ? index === 0
-          ? 'To sharpen my mind, expand my worldview, and cultivate lifelong learning.'
-          : index === 1
-          ? 'To have sustained energy for family, creative work, and vitality.'
-          : 'To maintain inner peace and emotional grounding amidst busy seasons.'
-        : '',
+      text: '',
+      priority: 2,
+      isTopThree: false,
+      whyItMatters: '',
       milestones: {
-        q1: isSampleTop ? 'Finish first 3 books and establish consistent routine' : '',
-        q2: isSampleTop ? 'Read books 4-6; do mid-year checkin' : '',
-        q3: isSampleTop ? 'Read books 7-9; join local book discussion circle' : '',
-        q4: isSampleTop ? 'Read books 10-12; compile top takeaways into personal playbook' : '',
+        q1: '',
+        q2: '',
+        q3: '',
+        q4: '',
       },
-      supportNeeded: isSampleTop ? 'Accountability partner, quiet reading nook at home, library card' : '',
+      supportNeeded: '',
       quarterPlans: createDefaultQuarterPlans(item.key),
       monthPlans: createDefaultMonthPlans(item.key, year),
     };
@@ -504,12 +491,41 @@ export async function loadJournalState(): Promise<JournalState> {
       const goals = yearsData[activeYear] || createDefaultGoalsForYear(activeYear);
       yearsData[activeYear] = goals;
 
-      return {
+      // Clean up legacy sample texts so all goals show light placeholders like the rest
+      const sampleTexts = [
+        'Read 12 transformative books and write monthly summaries',
+        'Establish a daily 30-minute workout and prioritize 7.5 hours of sleep',
+        'Dedicate 15 minutes each morning to quiet prayer and meditation',
+      ];
+      let cleanedLegacySample = false;
+      Object.keys(yearsData).forEach((yrKey) => {
+        const yrGoals = yearsData[yrKey];
+        if (yrGoals) {
+          Object.values(yrGoals).forEach((g: any) => {
+            if (g && sampleTexts.includes(g.text)) {
+              g.text = '';
+              g.whyItMatters = '';
+              g.milestones = { q1: '', q2: '', q3: '', q4: '' };
+              g.supportNeeded = '';
+              g.isTopThree = false;
+              cleanedLegacySample = true;
+            }
+          });
+        }
+      });
+
+      const loadedState: JournalState = {
         year: activeYear,
         goals,
         customAreas: parsed.customAreas || Object.keys(goals).filter((k) => !LIFE_AREAS.some((a) => a.key === k)),
         yearsData,
       };
+
+      if (cleanedLegacySample) {
+        saveJournalState(loadedState).catch(() => {});
+      }
+
+      return loadedState;
     }
   } catch (err) {
     console.warn('Failed to load journal state from storage:', err);
