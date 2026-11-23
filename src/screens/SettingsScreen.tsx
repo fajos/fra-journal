@@ -196,11 +196,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   const handleToggleBiometrics = async (enabled: boolean) => {
     hapticFeedback.selection();
-    if (enabled && !userIsPro) {
-      hapticFeedback.warning();
-      setShowSubscriptionModal(true);
-      return;
-    }
     if (enabled) {
       const authed = await authenticateWithBiometrics('Enable biometric and screen lock for your journal');
       if (authed) {
@@ -822,11 +817,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
               Biometric & Screen Lock
             </Text>
-            {!userIsPro && (
-              <View style={styles.proHeaderBadge}>
-                <Text style={styles.proHeaderBadgeText}>★ PRO</Text>
-              </View>
-            )}
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
             Keep your deeply personal thoughts, finances, and reflections private with Face ID, Touch ID, Fingerprint, or device Passcode/PIN on app launch.
