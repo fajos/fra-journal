@@ -6,7 +6,7 @@ import Purchases, {
   CustomerInfo,
   LOG_LEVEL,
 } from 'react-native-purchases';
-import { CloudUser } from './cloudSyncService';
+import type { CloudUser } from './cloudSyncService';
 
 // Public API keys for RevenueCat (can be overridden via Expo environment variables)
 const RC_APPLE_KEY = process.env.EXPO_PUBLIC_RC_APPLE_KEY || 'appl_vYRQKPxXqkMNOmLVLSLdeMkclcT';

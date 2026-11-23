@@ -23,6 +23,13 @@ export const hapticFeedback = {
       } catch (e) {}
     }
   },
+  warning: () => {
+    if (Platform.OS !== 'web') {
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } catch (e) {}
+    }
+  },
   error: () => {
     if (Platform.OS !== 'web') {
       try {
