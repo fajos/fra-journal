@@ -165,6 +165,11 @@ export async function fetchCloudState(year: number): Promise<{
       return { success: false, error: 'Not logged in' };
     }
 
+    const isPro = await checkIsUserPro();
+    if (!isPro) {
+      return { success: false, error: 'Multi-Device Cloud Sync requires an active FRA Journal Pro subscription.' };
+    }
+
     const baseUrl = await getServerUrl();
     const res = await fetch(`${baseUrl}/api/journal/state?year=${year}`, {
       headers: {
