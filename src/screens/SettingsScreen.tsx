@@ -61,6 +61,7 @@ import {
   CloudDownload,
   ExternalLink,
   Info,
+  AlertTriangle,
 } from 'lucide-react-native';
 import {
   checkForAppUpdates,
@@ -131,6 +132,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [restoringSubscription, setRestoringSubscription] = useState(false);
   const [subDetails, setSubDetails] = useState<SubscriptionStatusDetails | null>(null);
+
+  // Safety Confirmation Modals
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
 
   useEffect(() => {
     getSubscriptionStatusDetails(cloudUser).then(setSubDetails);
@@ -1384,28 +1388,44 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           )}
         </View>
 
-        {/* Reset */}
+        {/* Reset Journal */}
         <View
           style={[
             styles.card,
             {
               backgroundColor: theme.colors.cardBackground,
-              borderColor: theme.colors.cardBorder,
+              borderColor: '#FCA5A5',
             },
           ]}
         >
           <View style={styles.cardHeader}>
-            <RotateCcw size={18} color={theme.colors.danger} />
-            <Text style={[styles.cardTitle, { color: theme.colors.textDark, fontFamily: theme.typography.fontFamilySerif }]}>
+            <RotateCcw size={18} color="#DC2626" />
+            <Text style={[styles.cardTitle, { color: '#DC2626', fontFamily: theme.typography.fontFamilySerif }]}>
               Reset Journal
             </Text>
           </View>
-          <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Reset all entries back to the clean starter template.
+
+          {/* Warning Banner */}
+          <View style={[styles.resetWarningBox, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}>
+            <AlertTriangle size={16} color="#DC2626" />
+            <Text style={[styles.resetWarningText, { color: '#991B1B' }]}>
+              Warning: Resetting permanently deletes all your annual goals, quarterly milestones, habit trackers, and notes across all years. This action is irreversible.
+            </Text>
+          </View>
+
+          <Text style={[styles.cardDesc, { color: theme.colors.textMuted, marginTop: 4 }]}>
+            If you wish to start over with a fresh blank journal, make sure to export a PDF or save a JSON backup copy from the Backup section above first.
           </Text>
-          <Pressable onPress={handleReset} style={styles.dangerButton}>
+
+          <Pressable
+            onPress={() => {
+              hapticFeedback.warning();
+              setShowResetConfirmModal(true);
+            }}
+            style={[styles.dangerButton, { backgroundColor: '#DC2626' }]}
+          >
             <RotateCcw size={14} color="#FFFFFF" />
-            <Text style={styles.dangerButtonText}>Reset to Default Starters</Text>
+            <Text style={styles.dangerButtonText}>Reset Journal to Clean Starter...</Text>
           </Pressable>
         </View>
 
@@ -1465,6 +1485,105 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         }}
         onSuccess={handleSubscriptionSuccess}
       />
+
+      {/* Reset Confirmation Modal */}
+      <Modal
+        visible={showResetConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowResetConfirmModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.resetModalCard,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: theme.colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.resetModalIconCircle}>
+              <AlertTriangle size={28} color="#DC2626" />
+            </View>
+
+            <Text
+              style={[
+                styles.resetModalTitle,
+                {
+                  color: theme.colors.textDark,
+                  fontFamily: theme.typography.fontFamilySerif,
+                },
+              ]}
+            >
+              Reset Entire Journal?
+            </Text>
+
+            <Text style={[styles.resetModalSubtitle, { color: theme.colors.textMuted }]}>
+              Are you sure you want to permanently reset your journal?
+            </Text>
+
+            <View style={styles.resetImplicationsList}>
+              <View style={styles.resetImplicationItem}>
+                <Text style={styles.resetBullet}>•</Text>
+                <Text style={[styles.resetImplicationText, { color: theme.colors.textDark }]}>
+                  All annual goals & focus areas across all years will be wiped.
+                </Text>
+              </View>
+              <View style={styles.resetImplicationItem}>
+                <Text style={styles.resetBullet}>•</Text>
+                <Text style={[styles.resetImplicationText, { color: theme.colors.textDark }]}>
+                  All weekly habits, cadence notes, and reflections will be cleared.
+                </Text>
+              </View>
+              <View style={styles.resetImplicationItem}>
+                <Text style={styles.resetBullet}>•</Text>
+                <Text style={[styles.resetImplicationText, { color: '#DC2626', fontWeight: '700' }]}>
+                  This action is permanent and cannot be undone.
+                </Text>
+              </View>
+            </View>
+
+            <Text style={[styles.resetBackupAdvice, { color: theme.colors.textMuted }]}>
+              Tip: Cancel to export your current journal as a PDF or JSON backup first before resetting.
+            </Text>
+
+            <View style={styles.resetModalActionRow}>
+              <Pressable
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setShowResetConfirmModal(false);
+                }}
+                style={[
+                  styles.resetCancelBtn,
+                  {
+                    backgroundColor: theme.colors.primaryLight || '#F3F4F6',
+                    borderColor: theme.colors.cardBorder,
+                  },
+                ]}
+              >
+                <Text style={[styles.resetCancelBtnText, { color: theme.colors.textDark }]}>
+                  Keep My Journal (Cancel)
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={async () => {
+                  setShowResetConfirmModal(false);
+                  await handleReset();
+                }}
+                style={[
+                  styles.resetConfirmBtn,
+                  { backgroundColor: '#DC2626' },
+                ]}
+              >
+                <RotateCcw size={15} color="#FFFFFF" />
+                <Text style={styles.resetConfirmBtnText}>Yes, Reset Everything</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -2090,5 +2209,119 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  resetWarningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  resetWarningText: {
+    fontSize: 12.5,
+    flex: 1,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  resetModalCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 22,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  resetModalIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  resetModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  resetModalSubtitle: {
+    fontSize: 13.5,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 19,
+  },
+  resetImplicationsList: {
+    width: '100%',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    padding: 12,
+    marginBottom: 14,
+    gap: 8,
+  },
+  resetImplicationItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  resetBullet: {
+    color: '#DC2626',
+    fontSize: 15,
+    lineHeight: 18,
+    fontWeight: '700',
+  },
+  resetImplicationText: {
+    fontSize: 12.5,
+    lineHeight: 17,
+    flex: 1,
+  },
+  resetBackupAdvice: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 17,
+    fontStyle: 'italic',
+    marginBottom: 18,
+  },
+  resetModalActionRow: {
+    flexDirection: 'column',
+    width: '100%',
+    gap: 10,
+  },
+  resetCancelBtn: {
+    width: '100%',
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  resetConfirmBtn: {
+    width: '100%',
+    paddingVertical: 13,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  resetConfirmBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
