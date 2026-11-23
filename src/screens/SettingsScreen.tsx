@@ -982,25 +982,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 You are currently on the Free Starter plan. Upgrade to FRA Journal Pro to unlock unlimited AI goal decomposition, real-time multi-device cloud sync, printable annual keepsakes, and automated email reminders.
               </Text>
 
-              <View style={styles.buttonRow}>
+              <View style={styles.upgradeActionsCol}>
                 <Pressable
                   onPress={() => {
                     hapticFeedback.selection();
                     setShowSubscriptionModal(true);
                   }}
-                  style={[styles.buttonPrimary, { backgroundColor: theme.colors.primary, flex: 1.5 }]}
+                  style={[styles.upgradeProBtn, { backgroundColor: theme.colors.primary }]}
                 >
-                  <Sparkles size={15} color="#FFFFFF" />
-                  <Text style={styles.buttonPrimaryText}>Upgrade to FRA Journal Pro ($6.99/yr)</Text>
+                  <Sparkles size={16} color="#FFFFFF" />
+                  <Text style={styles.upgradeProBtnText}>Upgrade to FRA Journal Pro ($6.99/yr)</Text>
                 </Pressable>
 
                 <Pressable
                   onPress={handleRestoreSub}
                   disabled={restoringSubscription}
-                  style={[styles.buttonSecondary, { borderColor: theme.colors.cardBorder, flex: 1 }]}
+                  style={[styles.restoreSubBtn, { borderColor: theme.colors.cardBorder }]}
                 >
-                  <RotateCcw size={14} color={theme.colors.textDark} />
-                  <Text style={[styles.buttonSecondaryText, { color: theme.colors.textDark }]}>Restore</Text>
+                  {restoringSubscription ? (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  ) : (
+                    <RotateCcw size={14} color={theme.colors.textDark} />
+                  )}
+                  <Text style={[styles.restoreSubBtnText, { color: theme.colors.textDark }]}>
+                    {restoringSubscription ? 'Checking stores...' : 'Restore Purchases'}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -1657,8 +1663,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 11,
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
   },
   buttonPrimaryText: {
@@ -1674,9 +1681,46 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1,
     paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 8,
   },
   buttonSecondaryText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  upgradeActionsCol: {
+    gap: 10,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  upgradeProBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  upgradeProBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  restoreSubBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  restoreSubBtnText: {
     fontSize: 13,
     fontWeight: '600',
   },
