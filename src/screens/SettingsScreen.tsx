@@ -60,6 +60,7 @@ import {
   Trash2,
   CloudDownload,
   ExternalLink,
+  Info,
 } from 'lucide-react-native';
 import {
   checkForAppUpdates,
@@ -164,9 +165,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       if (user) {
         const rem = await fetchReminderSettings();
         if (rem) {
-          setReminderFreq(rem.frequency);
+          if (userIsPro) {
+            setReminderFreq(rem.frequency || 'disabled');
+          } else {
+            setReminderFreq('disabled');
+          }
           setReminderDay(rem.day_of_week || 'Monday');
+        } else {
+          setReminderFreq('disabled');
         }
+      } else {
+        setReminderFreq('disabled');
       }
     }
     checkPrefs();
@@ -196,6 +205,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   const handleToggleBiometrics = async (enabled: boolean) => {
     hapticFeedback.selection();
+    if (Platform.OS === 'web') {
+      showStatus("Device screen lock uses your phone's native Face ID, Touch ID, Fingerprint, or device PIN and is available on mobile.");
+      return;
+    }
     if (enabled) {
       const authed = await authenticateWithBiometrics('Enable biometric and screen lock for your journal');
       if (authed) {
@@ -819,20 +832,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </Text>
           </View>
           <Text style={[styles.cardDesc, { color: theme.colors.textMuted }]}>
-            Keep your deeply personal thoughts, finances, and reflections private with Face ID, Touch ID, Fingerprint, or device Passcode/PIN on app launch.
+            {Platform.OS === 'web'
+              ? "Device screen lock uses your phone's native Face ID, Touch ID, Fingerprint, or device lock screen PIN. This hardware security feature is active on the iOS & Android mobile apps."
+              : "Keep your deeply personal thoughts, finances, and reflections private using your phone's built-in Face ID, Touch ID, Fingerprint, or device lock screen PIN (no separate PIN to create or remember)."}
           </Text>
 
-          <View style={styles.switchRow}>
-            <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>
-              Require {biometricLabel} on Launch
-            </Text>
-            <Switch
-              value={biometricEnabled}
-              onValueChange={handleToggleBiometrics}
-              trackColor={{ false: theme.colors.linedPaper, true: theme.colors.primaryLight }}
-              thumbColor={biometricEnabled ? theme.colors.primary : '#FFFFFF'}
-            />
-          </View>
+          {Platform.OS === 'web' ? (
+            <View
+              style={[
+                styles.webLockNotice,
+                {
+                  backgroundColor: theme.colors.primaryLight,
+                  borderColor: theme.colors.cardBorder,
+                },
+              ]}
+            >
+              <Info size={16} color={theme.colors.primary} />
+              <Text style={[styles.webLockNoticeText, { color: theme.colors.textDark }]}>
+                Available on mobile: Screen lock uses your phone's native Face ID, Touch ID, or lock screen PIN. Web browsers do not have access to OS device lock credentials.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.switchRow}>
+              <Text style={[styles.switchLabel, { color: theme.colors.textDark }]}>
+                Require {biometricLabel} on Launch
+              </Text>
+              <Switch
+                value={biometricEnabled}
+                onValueChange={handleToggleBiometrics}
+                trackColor={{ false: theme.colors.linedPaper, true: theme.colors.primaryLight }}
+                thumbColor={biometricEnabled ? theme.colors.primary : '#FFFFFF'}
+              />
+            </View>
+          )}
         </View>
 
         {/* Automated Cadence Reminders */}
@@ -1173,7 +1205,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               { id: 'daily', label: 'Daily' },
               { id: 'disabled', label: 'Off' },
             ].map((f) => {
-              const isAct = reminderFreq === f.id;
+              const effectiveFreq = userIsPro ? reminderFreq : 'disabled';
+              const isAct = effectiveFreq === f.id;
               return (
                 <Pressable
                   key={f.id}
@@ -1190,7 +1223,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     {
                       backgroundColor: isAct ? theme.colors.primary : theme.colors.primaryLight,
                       borderColor: isAct ? theme.colors.primary : theme.colors.cardBorder,
-                      opacity: !userIsPro ? 0.75 : 1,
+                      opacity: !userIsPro && f.id !== 'disabled' ? 0.6 : 1,
                     },
                   ]}
                 >
@@ -1665,6 +1698,20 @@ const styles = StyleSheet.create({
   },
   archivePillText: {
     fontSize: 11.5,
+  },
+  webLockNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 10,
+    marginTop: 8,
+  },
+  webLockNoticeText: {
+    fontSize: 12.5,
+    flex: 1,
+    lineHeight: 18,
   },
   switchRow: {
     flexDirection: 'row',

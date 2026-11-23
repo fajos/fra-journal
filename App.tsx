@@ -84,9 +84,9 @@ function AppContent() {
       const bioLabel = await getBiometricLabel();
       setBiometricLabel(bioLabel);
 
-      // Check biometric setting
+      // Check biometric setting (mobile hardware only)
       const bioPref = await AsyncStorage.getItem(BIOMETRIC_KEY);
-      if (bioPref === 'true') {
+      if (bioPref === 'true' && Platform.OS !== 'web') {
         setLocked(true);
         const success = await authenticateWithBiometrics(`Unlock with ${bioLabel}`);
         if (success) {
