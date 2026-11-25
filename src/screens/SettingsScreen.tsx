@@ -66,6 +66,7 @@ import {
 import {
   checkForAppUpdates,
   reloadAppAsync,
+  getAppVersion,
 } from '../services/updatesService';
 import { Modal, ActivityIndicator } from 'react-native';
 import {
@@ -1359,7 +1360,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           {/* Version Info Row */}
           <View style={[styles.updateVersionRow, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.cardBorder }]}>
             <Text style={[styles.updateVersionLabel, { color: theme.colors.textDark }]}>App Version</Text>
-            <Text style={[styles.updateVersionVal, { color: theme.colors.primary }]}>v1.0.0</Text>
+            <Text style={[styles.updateVersionVal, { color: theme.colors.primary }]}>v{getAppVersion()}</Text>
           </View>
 
           {updateReady ? (

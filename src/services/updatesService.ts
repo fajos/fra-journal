@@ -1,5 +1,7 @@
 import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import appConfig from '../../app.json';
 
 export interface UpdateStatusInfo {
   isEnabled: boolean;
@@ -15,6 +17,18 @@ export interface CheckUpdateResult {
   isAvailable: boolean;
   isNew: boolean;
   message: string;
+}
+
+/**
+ * Returns the configured semantic application version (e.g. "1.1.0").
+ */
+export function getAppVersion(): string {
+  return (
+    Constants.expoConfig?.version ||
+    (Constants as any).manifest?.version ||
+    (appConfig as any)?.expo?.version ||
+    '1.1.0'
+  );
 }
 
 /**
