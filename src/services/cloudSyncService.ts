@@ -165,11 +165,6 @@ export async function fetchCloudState(year: number): Promise<{
       return { success: false, error: 'Not logged in' };
     }
 
-    const isPro = await checkIsUserPro();
-    if (!isPro) {
-      return { success: false, error: 'Multi-Device Cloud Sync requires an active FRA Journal Pro subscription.' };
-    }
-
     const baseUrl = await getServerUrl();
     const res = await fetch(`${baseUrl}/api/journal/state?year=${year}`, {
       headers: {
@@ -204,16 +199,6 @@ export async function syncWithCloud(localState: JournalState): Promise<{ success
     const token = await getCloudToken();
     if (!token) {
       return { success: false, message: 'Not logged in. Running in offline guest mode.' };
-    }
-
-    // Pro Gating: Only Pro subscribers can sync data to the cloud
-    const isPro = await checkIsUserPro();
-    if (!isPro) {
-      return {
-        success: false,
-        isProRequired: true,
-        message: 'Multi-Device Cloud Sync is an exclusive FRA Journal Pro feature. Please upgrade to Pro to backup and sync your journal.',
-      };
     }
 
     const baseUrl = await getServerUrl();

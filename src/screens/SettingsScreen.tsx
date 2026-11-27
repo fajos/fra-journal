@@ -316,11 +316,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleSyncCloud = async () => {
-    if (!userIsPro) {
-      hapticFeedback.warning();
-      setShowSubscriptionModal(true);
-      return;
-    }
     hapticFeedback.medium();
     setSyncLoading(true);
     const res = await syncWithCloud(state);
